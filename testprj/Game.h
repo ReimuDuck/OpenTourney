@@ -10,15 +10,19 @@ class Game
 public:
     Game() : rounds(0){}
 
-    std::string GetPairing() const;
-    std::string GetStandings() const;
+    std::string GetPairing() ;
+    std::string GetStandings();
 
+	void SortPlayers();
+    void SetPairings();
+    void ComparePlayers();
     void SetRounds(int r);
+	void PlayRound();
     void AddPlayer(Player* p);
-    Player* GetPlayer(int id) const;
 
 private:
     int rounds;
+	int roundNumber;
 
     std::vector<Player*> sortedPlayers;
     std::unordered_map<int, Player*> players;

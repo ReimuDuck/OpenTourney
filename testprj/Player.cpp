@@ -31,15 +31,15 @@ double Player::GetWR() const {
 }
 double Player::GetOWR() const {
     double total = 0.0;
-    double wins;
+    double win = 0.0;
     for(int i = 0; i < opponents.size(); i++){
         Player* p = opponents.at(i);
          total += p->GetWins() + p->GetLosses() + p->GetTies();
-         wins += p->GetWins();
+         win += p->GetWins();
     }
     if (total == 0) return 0.0;
 
-    return wins / total;
+    return win / total;
 }
 //double Player::GetOOWR() const {
 //
