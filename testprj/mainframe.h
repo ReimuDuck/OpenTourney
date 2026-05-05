@@ -20,7 +20,7 @@ private:
 	wxMenu* tourneyMenu;
 	wxOverlay* overlay;
 
-
+	void removePlayer(wxCommandEvent& evt);
 	void createControls();
 	void onAddPlayer(wxCommandEvent& evt);
 	void OnTextChanged(wxCommandEvent& evt);

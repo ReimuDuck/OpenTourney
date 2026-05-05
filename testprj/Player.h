@@ -8,11 +8,14 @@ class Player
 public:
 	Player(string Fname, string Lname, int id);
 
+	~Player();
+
 	void SetScore( char h);
 
 	void SetName(string fname, string lname);
 
 	void AddOpponent(Player* opponent);
+	void RemoveOpponents(Player* opponent);
 
 	double GetWR() const;
 	double GetOWR() const;
@@ -23,7 +26,6 @@ public:
 	int GetWins() const;
 	int GetLosses() const;
 	int GetTies() const;
-	string GetScore() const;
 
 	string GetName() const;
 

@@ -42,6 +42,31 @@ Player* Game::GetPlayer(int id) const
 	return nullptr; 
 }
 
+void Game::removeLatestPlayer() {
+    if (sortedPlayers.empty()) {
+        return;
+    }
+
+    Player* last = sortedPlayers.back();
+    if (!last) {
+        return;
+    }
+
+    auto it = players.find(last->GetID());
+    // If not found, avoid dereferencing the end iterator
+    if (it == players.end()) {
+        sortedPlayers.erase(std::remove(sortedPlayers.begin(), sortedPlayers.end(), last), sortedPlayers.end());
+        return;
+    }
+
+    // Remove mapping then remove any stale copies from sortedPlayers, then delete
+    Player* p = it->second;
+    players.erase(it);
+
+    sortedPlayers.erase(std::remove(sortedPlayers.begin(), sortedPlayers.end(), p), sortedPlayers.end());
+
+    delete p;
+}
 
 void Game::SetRounds(int r) {
     rounds = r-1;
@@ -53,6 +78,9 @@ void Game::PlayRound() {
     roundNumber++;
 }
 void Game::SetPairings() {
+    if (players.empty()) {
+        return;
+    }
     pairings.clear();
 	SortPlayers();
     switch (roundNumber) {
@@ -65,9 +93,12 @@ void Game::SetPairings() {
         for (int i = 0; i < sortedPlayers.size(); i += 2) {
             if (i + 1 < sortedPlayers.size()) {
                 pairings.emplace_back(sortedPlayers[i], sortedPlayers[i + 1]);
+				sortedPlayers[i]->AddOpponent(sortedPlayers[i + 1]);
+				sortedPlayers[i + 1]->AddOpponent(sortedPlayers[i]);
             }
             else {
                 pairings.emplace_back(sortedPlayers[i], nullptr);
+                sortedPlayers[i]->SetScore('T'); // bye counts as a tie
             }
         }
         break;
@@ -79,13 +110,20 @@ void Game::SetPairings() {
         for (int i = 0; i < sortedPlayers.size(); i += 2) {
             if (i + 1 < sortedPlayers.size()) {
                 pairings.emplace_back(sortedPlayers[i], sortedPlayers[i + 1]);
+                sortedPlayers[i]->AddOpponent(sortedPlayers[i + 1]);
+                sortedPlayers[i + 1]->AddOpponent(sortedPlayers[i]);
             }
             else {
                 pairings.emplace_back(sortedPlayers[i], nullptr);
+				sortedPlayers[i]->SetScore('T');
             }
         }
         break;
     }
+}
+void Game::setScore(Player* w, Player* l) {
+	w->SetScore('W');
+	l->SetScore('L');
 }
 std::string Game::GetPairing(){
     std::string result;
@@ -107,7 +145,7 @@ std::string Game::GetStandings() {
     
     std::string result;
     for (int i = 0; i < sortedPlayers.size(); i++) {
-		result += "\n" + std::to_string(i + 1) + ". " + sortedPlayers[i]->GetName() + " - " + std::to_string(sortedPlayers[i]->GetID()) + " - " + std::to_string(sortedPlayers[i]->GetWR()) ;
+		result +=  std::to_string(i + 1) + ". " + sortedPlayers[i]->GetName() + " - " + std::to_string(sortedPlayers[i]->GetID()) + " - " + std::to_string(sortedPlayers[i]->GetWR()) +"\n";
     }
     return result;
 }

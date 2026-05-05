@@ -8,18 +8,19 @@
 class Game
 {
 public:
-    Game() : rounds(0){}
+    Game() : rounds(0), roundNumber(0){}
 
     std::string GetPairing() ;
     std::string GetStandings();
 
 	void SortPlayers();
     void SetPairings();
-    void ComparePlayers();
+    void setScore(Player* w, Player* l);
     void SetRounds(int r);
 	void PlayRound();
     void AddPlayer(Player* p);
 	Player* GetPlayer(int id) const;
+    void removeLatestPlayer();
 	int getPlayersSize() { 
         SortPlayers();
         return sortedPlayers.size(); 

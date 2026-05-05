@@ -8,6 +8,15 @@ Player::Player(std::string fname, std::string lname, int id)
 
 }
 
+Player::~Player()
+{
+	Player* p;
+    for (int i = 0; i < opponents.size(); i++) {
+        p = opponents.at(i);
+        p->opponents.erase(std::remove(p->opponents.begin(), p->opponents.end(), this), p->opponents.end());
+	}
+}
+
 void Player::SetScore(char h) {
     if (h == 'W') wins++;
     else if (h == 'L') losses++;
@@ -22,6 +31,15 @@ void Player::SetName(string fname, string lname) {
 void Player::AddOpponent(Player* opponent) {
     opponents.push_back(opponent);
 }
+
+//void Player::RemoveOpponents(Player* p)
+//{
+//    // Remove the player from the opponents' lists
+//    for (Player* opponent : p->opponents) {
+//        opponent->opponents.erase(std::remove(opponent->opponents.begin(), opponent->opponents.end(), p), opponent->opponents.end());
+//    }
+//
+//}
 
 double Player::GetWR() const {
     int total = wins + losses + ties;
