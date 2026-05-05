@@ -19,12 +19,15 @@ private:
 	wxMenuBar* menuBar;
 	wxMenu* tourneyMenu;
 	wxOverlay* overlay;
+	wxFont font;
+	wxCheckBox* checkScore;
 
 	void removePlayer(wxCommandEvent& evt);
 	void createControls();
 	void onAddPlayer(wxCommandEvent& evt);
 	void OnTextChanged(wxCommandEvent& evt);
 	void showPlayers();
+	void startTourney(wxCommandEvent& evt);
 
 
 	std::vector<wxTextCtrl*> textBoxes;

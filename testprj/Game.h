@@ -17,9 +17,10 @@ public:
     void SetPairings();
     void setScore(Player* w, Player* l);
     void SetRounds(int r);
-	void PlayRound();
+    std::string PlayRound();
     void AddPlayer(Player* p);
 	Player* GetPlayer(int id) const;
+
     void removeLatestPlayer();
 	int getPlayersSize() { 
         SortPlayers();

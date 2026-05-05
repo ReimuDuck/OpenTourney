@@ -5,7 +5,7 @@
 #include "Player.h"
 #include <algorithm>
 #include <random>
-
+//-------------------------------------------------------------------------------------------------------------
 void Game::SortPlayers() {
     if(players.empty()){
         return;
@@ -31,7 +31,7 @@ void Game::SortPlayers() {
 void Game::AddPlayer(Player* p){
 	players[p->GetID()] = p;
 }
-
+//-------------------------------------------------------------------------------------------------------------
 Player* Game::GetPlayer(int id) const
 {
     auto it = players.find(id);
@@ -41,6 +41,7 @@ Player* Game::GetPlayer(int id) const
     // Return nullptr if player with the given ID is not found
 	return nullptr; 
 }
+//-------------------------------------------------------------------------------------------------------------
 
 void Game::removeLatestPlayer() {
     if (sortedPlayers.empty()) {
@@ -67,16 +68,18 @@ void Game::removeLatestPlayer() {
 
     delete p;
 }
-
+//-------------------------------------------------------------------------------------------------------------
 void Game::SetRounds(int r) {
     rounds = r-1;
 }
-
-void Game::PlayRound() {
+//-------------------------------------------------------------------------------------------------------------
+std::string Game::PlayRound() {
     SetPairings();
-    GetPairing();
+    std::string results = GetPairing();
     roundNumber++;
+    return results;
 }
+//-------------------------------------------------------------------------------------------------------------
 void Game::SetPairings() {
     if (players.empty()) {
         return;
@@ -121,22 +124,39 @@ void Game::SetPairings() {
         break;
     }
 }
+//-------------------------------------------------------------------------------------------------------------
 void Game::setScore(Player* w, Player* l) {
 	w->SetScore('W');
 	l->SetScore('L');
 }
+//-------------------------------------------------------------------------------------------------------------
 std::string Game::GetPairing(){
     std::string result;
 	// Generate pairings based on the current round
     for (const auto& pair : pairings) {
         result += pair.first->GetName();
-        result += " vs ";
-        result += pair.second->GetName();
+		result += "\t ------- \t" + std::to_string(pair.first->GetWins()) +"W/"
+            + std::to_string(pair.first->GetLosses()) + "L/" 
+            + std::to_string(pair.first->GetTies()) + "T";
+		result += " - " + std::to_string(pair.first->GetWR());
+        result += "%\t vs \t";
+        if (pair.second) {
+            result += pair.second->GetName();
+            result += "\t ------- \t" + std::to_string(pair.first->GetWins()) + "W/"
+                + std::to_string(pair.first->GetLosses()) + "L/"
+                + std::to_string(pair.first->GetTies()) + "T";
+            result += " - " + std::to_string(pair.second->GetWR()) + "%";
+        }
+        else {
+			result += "BYE";
+        }
+
         result += "\n";
     }
 
     return result;
 }
+//-------------------------------------------------------------------------------------------------------------
 std::string Game::GetStandings() {
     SortPlayers();
     if (sortedPlayers.empty()) {
@@ -149,3 +169,4 @@ std::string Game::GetStandings() {
     }
     return result;
 }
+//-------------------------------------------------------------------------------------------------------------

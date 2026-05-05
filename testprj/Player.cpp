@@ -7,6 +7,8 @@ Player::Player(std::string fname, std::string lname, int id)
     : Fname(fname), Lname(lname), ID(id), wins(0), losses(0), ties(0) {
 
 }
+Player::Player() : Fname(""), Lname(""), ID(0), wins(0), losses(0), ties(0) {
+}
 
 Player::~Player()
 {

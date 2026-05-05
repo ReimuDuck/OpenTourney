@@ -7,6 +7,7 @@ class Player
 {
 public:
 	Player(string Fname, string Lname, int id);
+	Player();
 
 	~Player();
 
