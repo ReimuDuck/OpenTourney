@@ -3,9 +3,9 @@
 #include <vector>
 using namespace std;
 
-Player::Player(std::string fname, std::string lname)
-    : Fname(fname), Lname(lname), wins(0), losses(0), ties(0) {
-    ID = rand();
+Player::Player(std::string fname, std::string lname, int id)
+    : Fname(fname), Lname(lname), ID(id), wins(0), losses(0), ties(0) {
+
 }
 
 void Player::SetScore(char h) {

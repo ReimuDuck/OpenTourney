@@ -6,7 +6,7 @@ using namespace std;
 class Player
 {
 public:
-	Player(string Fname, string Lname);
+	Player(string Fname, string Lname, int id);
 
 	void SetScore( char h);
 

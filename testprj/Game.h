@@ -19,6 +19,11 @@ public:
     void SetRounds(int r);
 	void PlayRound();
     void AddPlayer(Player* p);
+	Player* GetPlayer(int id) const;
+	int getPlayersSize() { 
+        SortPlayers();
+        return sortedPlayers.size(); 
+    }
 
 private:
     int rounds;

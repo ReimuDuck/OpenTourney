@@ -2,63 +2,125 @@
 #include "Player.h"
 #include "Game.h"
 #include <wx/wx.h>
+#include <sstream>
+#include <string>
+#include <vector>
 
 
 mainframe::mainframe(const wxString& title)
-    : wxFrame(nullptr, wxID_ANY, title)
+    : wxFrame(nullptr, wxID_ANY, title), player(nullptr),
+	game()
 {
-    panel = new wxPanel(this);
-
-    // Main vertical sizer
-    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
-
-    // Sizer for text boxes (grows)
-    sizer = new wxBoxSizer(wxVERTICAL);
-
-    // Sizer for buttons (fixed at bottom)
-    wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
-
-    wxTextCtrl* txt = new wxTextCtrl(panel, wxID_ANY);
-	wxStaticText* label = new wxStaticText(panel, wxID_ANY, "Enter Competitors: ");
-    wxButton* button = new wxButton(panel, wxID_ANY, "Submit");
-    wxButton* addButton = new wxButton(panel, wxID_ANY, "+");
-
-    addButton->Bind(wxEVT_BUTTON, &mainframe::OnAddClicked, this);
-    button->Bind(wxEVT_BUTTON, &mainframe::OnButtonClicked, this);
-
-    sizer->Add(label, 0, wxEXPAND | wxALL, 5);
-    // Add first textbox
-    sizer->Add(txt, 0, wxEXPAND | wxALL, 5);
-    textBoxes.push_back(txt);
-
-    // Add buttons to button sizer
-    buttonSizer->Add(addButton, 0, wxALL, 5);
-    buttonSizer->AddStretchSpacer(); // pushes Submit to the right
-    buttonSizer->Add(button, 0, wxALL, 5);
-
-    // Add both sections to main sizer
-    mainSizer->Add(sizer, 1, wxEXPAND);  // <-- grows
-    mainSizer->Add(buttonSizer, 0, wxEXPAND); // <-- stays at bottom
-
-    panel->SetSizer(mainSizer);
+	createControls();
 }
 
-void mainframe::OnButtonClicked(wxCommandEvent& evt) {
-	wxLogStatus("Button Clicked");
+void mainframe::createControls() {
+	// initializes the panel and menu bar, and shows the players in the tournament
+	wxFont font(12, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
+	panel = new wxPanel(this, wxID_ANY);
+	panel->SetFont(font);
+
+	menuBar = new wxMenuBar();
+	tourneyMenu = new wxMenu();
+	wxMenu* fileMenu = new wxMenu();
+
+	//todo: add save and load functionality
+	fileMenu->Append(wxID_EXIT, "Save", "Save to CSV");
+	menuBar->Append(fileMenu, "File");
+
+	tourneyMenu->Append(wxID_ANY, "Add Player", "Add a new competitor");
+	menuBar->Append(tourneyMenu, "Options");
+
+	tourneyMenu->Bind(wxEVT_COMMAND_MENU_SELECTED, &mainframe::onAddPlayer, this, wxID_ANY);
+
+	statusBar = CreateStatusBar();
+
+	showPlayers();
+	SetMenuBar(menuBar);
 }
 
+void mainframe::onAddPlayer(wxCommandEvent& evt)
+{	
+	// clear the panel and create new controls for adding a player
+	sizer->Clear(true);
+	sizer = new wxBoxSizer(wxHORIZONTAL);
+	panel->SetSizer(sizer);
+
+	sizer->Add(new wxStaticText(panel, wxID_ANY, "First Name:"), 0, wxALL, 3);
+
+	wxTextCtrl* txt = new wxTextCtrl(panel, wxID_ANY,wxEmptyString,wxDefaultPosition, wxSize(150, 30));
+	sizer->Add(txt, 0,wxALL, 5);
+	// just to show the text in the status bar when the user types something in the text box, not necessary for functionality
+	txt->Bind(wxEVT_TEXT, &mainframe::OnTextChanged, this);
+	fName = txt;
+
+	sizer->Add(new wxStaticText(panel, wxID_ANY, "Last Name:"), 0, wxALL, 3);
+
+	wxTextCtrl* txt2 = new wxTextCtrl(panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(150, 30));
+	sizer->Add(txt2, 0,wxALL, 5);
+	txt2->Bind(wxEVT_TEXT, &mainframe::OnTextChanged, this);
+	lName = txt2;
+
+	sizer->Add(new wxStaticText(panel, wxID_ANY, "ID:"), 0, wxALL, 3);
+
+	wxTextCtrl* txt3 = new wxTextCtrl(panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(150, 30));
+	sizer->Add(txt3, 4, wxALL, 5);
+	txt3->Bind(wxEVT_TEXT, &mainframe::OnTextChanged, this);
+	ID = txt3;
+
+	wxButton* addButton = new wxButton(panel, wxID_ANY, "Add Player");
+	sizer->Add(addButton, 0, wxALL, 5);
+
+	addButton->Bind(wxEVT_BUTTON, &mainframe::OnAddClicked, this);
+	panel->Layout();
+}
+// could be removed later
 void mainframe::OnTextChanged(wxCommandEvent& evt) {
 	wxString str = wxString::Format("Text: %s", evt.GetString());
 	wxLogStatus(str);
 }
+
+void mainframe::showPlayers()
+{	
+	// clear the panel and create new controls for showing the players in the tournament
+	wxBoxSizer* Hsizer = new wxBoxSizer(wxHORIZONTAL);
+
+	sizer = new wxBoxSizer(wxVERTICAL);
+
+	panel->SetSizer(sizer);
+
+	// headers for player list
+	Hsizer->Add(new wxStaticText(panel, wxID_ANY, "First Name:"), 0, wxALL, 3);
+	Hsizer->Add(new wxStaticText(panel, wxID_ANY, "Last Name:"), 0, wxALL, 3);
+	Hsizer->Add(new wxStaticText(panel, wxID_ANY, "ID:\n"), 0, wxALL, 3);
+
+	sizer->Add(Hsizer, 0, wxEXPAND);
+	
+	// get the standings from the game and display them in the panel
+	std::string standings = game.GetStandings();
+	std::stringstream ss(standings);
+	std::string line;
+	while (std::getline(ss, line)) {
+		wxString wxLine = wxString::FromUTF8(line.c_str());
+		sizer->Add(new wxStaticText(panel, wxID_ANY, wxLine), 0, wxBOTTOM, 3);
+	}
+
+	panel->Layout();
+}
 void mainframe::OnAddClicked(wxCommandEvent& evt) {
-    wxTextCtrl* txt = new wxTextCtrl(panel, wxID_ANY);
+	// get the values from the text boxes and add a new player to the tournament
+	long idLong;
 
-    sizer->Add(txt, 0, wxEXPAND | wxALL, 5);
+	wxString fname = fName->GetValue();
+	wxString lname = lName->GetValue();
+	wxString idStr = ID->GetValue();
+	idStr.ToLong(&idLong);
+	sizer->Clear(true);
 
-    textBoxes.push_back(txt);
+	player = new Player(fname.ToStdString(), lname.ToStdString(), idLong);
+	game.AddPlayer(player);
+	Player* p = game.GetPlayer(idLong);
 
-    panel->Layout();  // IMPORTANT: refresh layout
-
-    wxLogStatus("Added new text box");
+	wxLogStatus("Player Added: %s, ID: %d", p->GetName(), p->GetID());
+	showPlayers();
 }

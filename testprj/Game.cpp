@@ -7,6 +7,9 @@
 #include <random>
 
 void Game::SortPlayers() {
+    if(players.empty()){
+        return;
+	}
     sortedPlayers.clear();
 
 	// Copy players from the unordered_map to the vector
@@ -16,15 +19,27 @@ void Game::SortPlayers() {
 	// Sort the vector based on WR or OWR
     std::sort(sortedPlayers.begin(), sortedPlayers.end(), [this](Player* a, Player* b) {
         if (roundNumber == 1) {
-            return a->GetWR() >= b->GetWR();
+            if (a->GetWR() != b->GetWR()) return a->GetWR() > b->GetWR();
+            return a->GetID() < b->GetID(); // tie-breaker
         }
         else {
-            return a->GetOWR() >= b->GetOWR();
+            if (a->GetOWR() != b->GetOWR()) return a->GetOWR() > b->GetOWR();
+            return a->GetID() < b->GetID(); // tie-breaker
         }
-        });
+    });
 }
 void Game::AddPlayer(Player* p){
 	players[p->GetID()] = p;
+}
+
+Player* Game::GetPlayer(int id) const
+{
+    auto it = players.find(id);
+    if (it != players.end()) {
+        return it->second;
+    }
+    // Return nullptr if player with the given ID is not found
+	return nullptr; 
 }
 
 
@@ -86,9 +101,13 @@ std::string Game::GetPairing(){
 }
 std::string Game::GetStandings() {
     SortPlayers();
+    if (sortedPlayers.empty()) {
+        return "No players to display";
+    }
+    
     std::string result;
     for (int i = 0; i < sortedPlayers.size(); i++) {
-		result += i + ". " + sortedPlayers[i]->GetName() + " - " + std::to_string(sortedPlayers[i]->GetWR()) + "\n";
+		result += "\n" + std::to_string(i + 1) + ". " + sortedPlayers[i]->GetName() + " - " + std::to_string(sortedPlayers[i]->GetID()) + " - " + std::to_string(sortedPlayers[i]->GetWR()) ;
     }
     return result;
 }
