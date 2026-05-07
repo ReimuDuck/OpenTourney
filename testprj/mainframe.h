@@ -28,7 +28,7 @@ private:
 	void OnTextChanged(wxCommandEvent& evt);
 	void showPlayers();
 	void startTourney(wxCommandEvent& evt);
-
+	void OnAddScore(wxCommandEvent& evt, int p1, int p2);
 
 	std::vector<wxTextCtrl*> textBoxes;
 	wxTextCtrl* fName;

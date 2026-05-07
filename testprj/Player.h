@@ -16,10 +16,9 @@ public:
 	void SetName(string fname, string lname);
 
 	void AddOpponent(Player* opponent);
-	void RemoveOpponents(Player* opponent);
 
-	double GetWR() const;
-	double GetOWR() const;
+	int GetWR() const;
+	int GetOWR() const;
 
 	/*double GetOOWR() const;*/
 	int GetID();

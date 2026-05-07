@@ -5,6 +5,7 @@
 #include "Player.h"
 #include <algorithm>
 #include <random>
+#include <iomanip>
 //-------------------------------------------------------------------------------------------------------------
 void Game::SortPlayers() {
     if(players.empty()){
@@ -28,8 +29,18 @@ void Game::SortPlayers() {
         }
     });
 }
+//-------------------------------------------------------------------------------------------------------------
 void Game::AddPlayer(Player* p){
 	players[p->GetID()] = p;
+}
+//-------------------------------------------------------------------------------------------------------------
+// to be removed
+void Game::FillListTest() {
+	Player* defaultPlayer = new Player("Default", "Player", 0);
+    for (int i = 1; i <= 10; i++) {
+        Player* p = new Player("Player" + std::to_string(i), "Test", i);
+        AddPlayer(p);
+	}
 }
 //-------------------------------------------------------------------------------------------------------------
 Player* Game::GetPlayer(int id) const
@@ -68,16 +79,19 @@ void Game::removeLatestPlayer() {
 
     delete p;
 }
-//-------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------- TO REMOVE
 void Game::SetRounds(int r) {
     rounds = r-1;
 }
 //-------------------------------------------------------------------------------------------------------------
-std::string Game::PlayRound() {
+void Game::PlayRound() {
+    if (roundNumber > 0) {
+        return;
+    }
     SetPairings();
-    std::string results = GetPairing();
+    GetPairing();
     roundNumber++;
-    return results;
+    return;
 }
 //-------------------------------------------------------------------------------------------------------------
 void Game::SetPairings() {
@@ -125,36 +139,55 @@ void Game::SetPairings() {
     }
 }
 //-------------------------------------------------------------------------------------------------------------
-void Game::setScore(Player* w, Player* l) {
+void Game::setScore(Player* w, Player* l,char t) {
+    // if tie
+    if(t == 't'){
+        w->SetScore('T');
+        l->SetScore('T');
+        return;
+	}
+	// if bye set tie for player with bye
+    if ( !l) {
+        w->SetScore('T');
+        return;
+	}
+
 	w->SetScore('W');
 	l->SetScore('L');
 }
-//-------------------------------------------------------------------------------------------------------------
-std::string Game::GetPairing(){
-    std::string result;
+//------------------------------------------------------------------------------------------------------------- Rename later
+vector<string> Game::GetPairing(){
+    vector<string> results;
+    std::string result1;
+    std::string result2;
+    if(pairings.empty()){
+        results.push_back("No pairings to display");
+        return results;
+	}
 	// Generate pairings based on the current round
     for (const auto& pair : pairings) {
-        result += pair.first->GetName();
-		result += "\t ------- \t" + std::to_string(pair.first->GetWins()) +"W/"
+        result1 += pair.first->GetName();
+		result1 += " ------- " + std::to_string(pair.first->GetWins()) +"W/"
             + std::to_string(pair.first->GetLosses()) + "L/" 
             + std::to_string(pair.first->GetTies()) + "T";
-		result += " - " + std::to_string(pair.first->GetWR());
-        result += "%\t vs \t";
+		result1 += " - " + std::to_string(pair.first->GetWR()) + "%";
+        result1 += " vs ";
         if (pair.second) {
-            result += pair.second->GetName();
-            result += "\t ------- \t" + std::to_string(pair.first->GetWins()) + "W/"
-                + std::to_string(pair.first->GetLosses()) + "L/"
-                + std::to_string(pair.first->GetTies()) + "T";
-            result += " - " + std::to_string(pair.second->GetWR()) + "%";
+            result2 += pair.second->GetName();
+            result2 += " ------- " + std::to_string(pair.second->GetWins()) + "W/"
+                + std::to_string(pair.second->GetLosses()) + "L/"
+                + std::to_string(pair.second->GetTies()) + "T";
+            result2 += " - " + std::to_string(pair.second->GetWR()) + "%\n";
         }
         else {
-			result += "BYE";
+			result2 += "      BYE\n";
         }
-
-        result += "\n";
+        results.push_back(result1 + result2);
+		result1.clear();
+		result2.clear();
     }
 
-    return result;
+    return results;
 }
 //-------------------------------------------------------------------------------------------------------------
 std::string Game::GetStandings() {

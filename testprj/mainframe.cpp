@@ -5,6 +5,13 @@
 #include <sstream>
 #include <string>
 #include <vector>
+//KNOWN BUGS/TODO:
+// remove adding a player during a tournament/alter the function
+// do next round functionality
+// add save functionality
+// 
+//
+
 
 
 mainframe::mainframe(const wxString& title)
@@ -38,7 +45,8 @@ void mainframe::createControls() {
 	tourneyMenu->Bind(wxEVT_COMMAND_MENU_SELECTED, &mainframe::onAddPlayer, this, wxID_ANY);
 
 	statusBar = CreateStatusBar();
-
+	
+	game.FillListTest();
 	showPlayers();
 	SetMenuBar(menuBar);
 }
@@ -138,7 +146,7 @@ void mainframe::showPlayers()
 		sizer->Add(addButton, 0, wxALL);
 		addButton->Bind(wxEVT_BUTTON, &mainframe::removePlayer, this);
 
-		sizer->AddSpacer(420);
+		sizer->AddSpacer(100);
 		// sets button to start the tournament
 		wxButton* addTButton = new wxButton(panel, wxID_ANY, "Start Tourney");
 		Fsizer->Add(addTButton, 1, wxALIGN_CENTER_VERTICAL, 4);
@@ -173,7 +181,7 @@ void mainframe::OnAddClicked(wxCommandEvent& evt) {
 
 void mainframe::startTourney(wxCommandEvent& evt)
 {
-
+	
 	// clear the panel and create new controls for showing the players in the tournament
 	wxBoxSizer* Hsizer = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* Fsizer = new wxBoxSizer(wxHORIZONTAL);
@@ -189,29 +197,70 @@ void mainframe::startTourney(wxCommandEvent& evt)
 
 	sizer->Add(Hsizer, 0, wxEXPAND);
 	sizer->AddSpacer(10);
-	// get the pairings from the game and display them in the panel
-	std::string pairings = game.PlayRound();
-	std::stringstream ss(pairings);
-	std::string line;
-	// for each pairing, create a new static text control and add it to the panel
-	while (std::getline(ss, line)) {
+	// Start round
+	game.PlayRound();
+	// get the pairings from the game and display them in the panel, along with buttons to set the score for each pairing
+	vector<string> pairings = game.GetPairing();
+	std::vector<std::pair<Player*, Player*>> paired = game.GetPairings();
+	int j = 0;
+	for (const auto& line : pairings) {
+		
 		wxBoxSizer* PlayerListSizer = new wxBoxSizer(wxHORIZONTAL);
 
 		wxString wxLine = wxString::FromUTF8(line.c_str());
 		wxStaticText* name = new wxStaticText(panel, wxID_ANY, wxLine);
-		name->SetFont(font);
-		PlayerListSizer->Add(name, 0, wxALIGN_CENTER_VERTICAL);
-		sizer->Add(PlayerListSizer, 0, wxBOTTOM, 3);
 
-		// TODO: add checkboxes for score reporting, maybe add a text box for entering the score instead of checkboxes, not sure how to do this yet
-		
-		//checkScore = new wxCheckBox(panel, wxID_ANY, wxEmptyString,wxDefaultPosition,wxDefaultSize);
-		//sizer->Add(checkScore, 0, wxALL, 3);
-		//checkScore = new wxCheckBox(panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize);
-		//sizer->Add(checkScore, 0, wxALL, 3);
-		//checkScore = new wxCheckBox(panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize);
-		//sizer->Add(checkScore, 0, wxALL, 4);
+		name->SetFont(font);
+
+		PlayerListSizer->Add(name, 0, wxALIGN_CENTER_VERTICAL);
+
+		// get the player ids for the pairing, and bind the buttons to the OnAddScore function with the player ids as parameters
+		int i = paired[j].first->GetID();
+		int k = -1;
+		if (paired[j].second)
+			k = paired[j].second->GetID();
+
+		j++;
+		if (paired[j - 1].second) {
+			wxButton* addButton = new wxButton(panel, 0, "P1 WIN", wxDefaultPosition, wxSize(100, 30));
+			PlayerListSizer->Add(addButton, 0, wxALL);
+			addButton->Bind(wxEVT_BUTTON, [this, i, k](wxCommandEvent& event) {
+
+				this->OnAddScore(event, i, k);
+				});
+			wxButton* add1Button = new wxButton(panel, 1, "TIE", wxDefaultPosition, wxSize(100, 30));
+			PlayerListSizer->Add(add1Button, 0, wxALL);
+			add1Button->Bind(wxEVT_BUTTON, [this, i, k](wxCommandEvent& event) {
+				this->OnAddScore(event, i, k);
+				});
+			wxButton* add2Button = new wxButton(panel, 2, "P1 LOSS", wxDefaultPosition, wxSize(100, 30));
+			PlayerListSizer->Add(add2Button, 0, wxALL);
+			add2Button->Bind(wxEVT_BUTTON, [this, i, k](wxCommandEvent& event) {
+				this->OnAddScore(event, i, k);
+				});
+		}
+		/*PlayerListSizer->Add(Fsizer, 0, wxEXPAND, 0);*/
+		sizer->Add(PlayerListSizer, 0, wxBOTTOM, 3);
 	}
 	panel->Layout();
 }
 //-------------------------------------------------------------------------------------------------------------
+void mainframe::OnAddScore(wxCommandEvent& evt,int p1, int p2)
+{
+
+	if (evt.GetId() == 0 && p2 != -1) {
+		game.setScore(game.GetPlayer(p1), game.GetPlayer(p2),'w');
+	}
+	else if (evt.GetId() == 2 && p2 != -1) {
+		game.setScore(game.GetPlayer(p2), game.GetPlayer(p1),'l');
+	}
+	// ID 2
+	else if(evt.GetId() == 1 && p2 != -1) {
+		game.setScore(game.GetPlayer(p1), game.GetPlayer(p2),'t');
+	}
+	else {
+		// if there is a bye, just set the player with the bye to have tied
+		game.setScore(game.GetPlayer(p1), nullptr, 't');
+	}
+	startTourney(evt);
+}

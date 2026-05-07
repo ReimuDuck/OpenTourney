@@ -43,23 +43,22 @@ void Player::AddOpponent(Player* opponent) {
 //
 //}
 
-double Player::GetWR() const {
+int Player::GetWR() const {
     int total = wins + losses + ties;
-    if (total == 0) return 0.0;
-
-    return static_cast<double>(wins) / total;
+    if (total == 0) return 0;
+    return (wins * 100 / total );
 }
-double Player::GetOWR() const {
-    double total = 0.0;
-    double win = 0.0;
+int Player::GetOWR() const {
+    int total = 0;
+    int win = 0;
     for(int i = 0; i < opponents.size(); i++){
         Player* p = opponents.at(i);
          total += p->GetWins() + p->GetLosses() + p->GetTies();
          win += p->GetWins();
     }
-    if (total == 0) return 0.0;
+    if (total == 0) return 0;
 
-    return win / total;
+    return (wins * 100 / total);
 }
 //double Player::GetOOWR() const {
 //

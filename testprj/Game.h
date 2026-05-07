@@ -10,16 +10,18 @@ class Game
 public:
     Game() : rounds(0), roundNumber(0){}
 
-    std::string GetPairing() ;
+    vector<string> GetPairing() ;
     std::string GetStandings();
 
 	void SortPlayers();
     void SetPairings();
-    void setScore(Player* w, Player* l);
+	std::vector<std::pair<Player*, Player*>> GetPairings() const { return pairings; }
+    void setScore(Player* w, Player* l, char t);
     void SetRounds(int r);
-    std::string PlayRound();
+    void PlayRound();
     void AddPlayer(Player* p);
 	Player* GetPlayer(int id) const;
+    void FillListTest();
 
     void removeLatestPlayer();
 	int getPlayersSize() { 
