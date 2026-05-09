@@ -12,6 +12,8 @@ public:
 
     vector<string> GetPairing() ;
     std::string GetStandings();
+	int getRoundNumber() const { return roundNumber; }
+	int getRounds() const { return rounds; }
 
 	void SortPlayers();
     void SetPairings();

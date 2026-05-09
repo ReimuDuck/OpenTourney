@@ -22,7 +22,7 @@ public:
 
 	/*double GetOOWR() const;*/
 	int GetID();
-
+	int GetOOWR() const;
 	int GetWins() const;
 	int GetLosses() const;
 	int GetTies() const;

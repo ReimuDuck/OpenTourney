@@ -17,15 +17,22 @@ void Game::SortPlayers() {
     for (const auto& pair : players) {
         sortedPlayers.push_back(pair.second);
     }
-	// Sort the vector based on WR or OWR
+	// Sort the vector based on WR OWR then OOWR
     std::sort(sortedPlayers.begin(), sortedPlayers.end(), [this](Player* a, Player* b) {
-        if (roundNumber == 1) {
+        if (roundNumber == 2) {
             if (a->GetWR() != b->GetWR()) return a->GetWR() > b->GetWR();
             return a->GetID() < b->GetID(); // tie-breaker
         }
-        else {
+        else if(roundNumber==3) {
+            if (a->GetWR() != b->GetWR()) return a->GetWR() > b->GetWR();
             if (a->GetOWR() != b->GetOWR()) return a->GetOWR() > b->GetOWR();
-            return a->GetID() < b->GetID(); // tie-breaker
+            return a->GetID() < b->GetID(); 
+        }
+        else {
+            if (a->GetWR() != b->GetWR()) return a->GetWR() > b->GetWR();
+            if (a->GetOWR() != b->GetOWR()) return a->GetOWR() > b->GetOWR();
+            if (a->GetOOWR() != b->GetOOWR()) return a->GetOOWR() > b->GetOOWR();
+            return a->GetID() < b->GetID();
         }
     });
 }
@@ -81,16 +88,13 @@ void Game::removeLatestPlayer() {
 }
 //------------------------------------------------------------------------------------------------------------- TO REMOVE
 void Game::SetRounds(int r) {
-    rounds = r-1;
+    rounds = r;
 }
 //-------------------------------------------------------------------------------------------------------------
 void Game::PlayRound() {
-    if (roundNumber > 0) {
-        return;
-    }
+	roundNumber++;
     SetPairings();
     GetPairing();
-    roundNumber++;
     return;
 }
 //-------------------------------------------------------------------------------------------------------------
@@ -102,7 +106,7 @@ void Game::SetPairings() {
 	SortPlayers();
     switch (roundNumber) {
         
-    case 0:{
+    case 1:{
         std::random_device rd;
         std::mt19937 g(rd());
         // Shuffle the sortedPlayers vector to create random pairings for the first round
@@ -198,7 +202,7 @@ std::string Game::GetStandings() {
     
     std::string result;
     for (int i = 0; i < sortedPlayers.size(); i++) {
-		result +=  std::to_string(i + 1) + ". " + sortedPlayers[i]->GetName() + " - " + std::to_string(sortedPlayers[i]->GetID()) + " - " + std::to_string(sortedPlayers[i]->GetWR()) +"\n";
+		result +=  std::to_string(i + 1) + ". " + sortedPlayers[i]->GetName() + " - " + std::to_string(sortedPlayers[i]->GetID()) + " - " + std::to_string(sortedPlayers[i]->GetWR())+ " " + std::to_string(sortedPlayers[i]->GetOWR()) + " " + std::to_string(sortedPlayers[i]->GetOOWR()) + "%\n";
     }
     return result;
 }

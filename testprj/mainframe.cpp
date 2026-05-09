@@ -7,7 +7,7 @@
 #include <vector>
 //KNOWN BUGS/TODO:
 // remove adding a player during a tournament/alter the function
-// do next round functionality
+// do next round functionality ----
 // add save functionality
 // 
 //
@@ -136,21 +136,35 @@ void mainframe::showPlayers()
 		sizer->Add(PlayerListSizer, 0, wxBOTTOM, 3);
 	}
 	// button to add a new player
-	wxButton* addButton = new wxButton(panel, wxID_ANY, "+", wxDefaultPosition, wxSize(30, 30));
-	sizer->Add(addButton, 0, wxALL);
-	addButton->Bind(wxEVT_BUTTON, &mainframe::onAddPlayer, this);
+	if (!game.getRounds()) {
+		wxButton* addButton = new wxButton(panel, wxID_ANY, "+", wxDefaultPosition, wxSize(30, 30));
+		sizer->Add(addButton, 0, wxALL);
+		addButton->Bind(wxEVT_BUTTON, &mainframe::onAddPlayer, this);
+	}
 
-	// sets button to remove the most recently added player, only shows if there is at least one player in the tournament
-	if (game.getPlayersSize() != 0) {
+
+	// sets button to remove the most recently added player, only shows if there is at least one player in the tournament or if the tournament has not started yet
+	if (game.getPlayersSize() != 0 && !game.getRounds()) {
 		wxButton* addButton = new wxButton(panel, wxID_ANY, "-", wxDefaultPosition, wxSize(30, 30));
 		sizer->Add(addButton, 0, wxALL);
 		addButton->Bind(wxEVT_BUTTON, &mainframe::removePlayer, this);
 
-		sizer->AddSpacer(100);
+
+		// text box to set the number of rounds in the tournament
+		sizer->Add(new wxStaticText(panel, wxID_ANY, "Round Num"), 0, wxALL, 3);
+
+		wxTextCtrl* rnum = new wxTextCtrl(panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(150, 30));
+		rnum->SetFont(font);
+		sizer->Add(rnum, 0, wxALL, 5);
+		rnum->Bind(wxEVT_TEXT, &mainframe::OnTextChanged, this);
+
+		roundNumber = rnum;
+		
+		sizer->AddSpacer(20);
 		// sets button to start the tournament
 		wxButton* addTButton = new wxButton(panel, wxID_ANY, "Start Tourney");
 		Fsizer->Add(addTButton, 1, wxALIGN_CENTER_VERTICAL, 4);
-		addTButton->Bind(wxEVT_BUTTON, &mainframe::startTourney, this);
+		addTButton->Bind(wxEVT_BUTTON, &mainframe::startAndNextRound, this);
 		sizer->Add(Fsizer, 1, wxEXPAND,0);
 	}
 
@@ -164,14 +178,14 @@ void mainframe::OnAddClicked(wxCommandEvent& evt) {
 		wxLogStatus("Please fill in all fields.");
 		return;
 	}
-	wxString fname = fName->GetValue();
-	wxString lname = lName->GetValue();
-	wxString idStr = ID->GetValue();
-	idStr.ToLong(&idLong);
+	wxString fnametemp = fName->GetValue();
+	wxString lnametemp = lName->GetValue();
+	wxString idtemp = ID->GetValue();
+	idtemp.ToLong(&idLong);
 	sizer->Clear(true);
 
-	player = new Player(fname.ToStdString(), lname.ToStdString(), idLong);
-	game.AddPlayer(player);
+	game.AddPlayer(new Player(fnametemp.ToStdString(), lnametemp.ToStdString(), idLong));
+
 	Player* p = game.GetPlayer(idLong);
 
 	wxLogStatus("Player Added: %s, ID: %d", p->GetName(), p->GetID());
@@ -179,8 +193,23 @@ void mainframe::OnAddClicked(wxCommandEvent& evt) {
 }
 //-------------------------------------------------------------------------------------------------------------
 
-void mainframe::startTourney(wxCommandEvent& evt)
+void mainframe::startAndNextRound(wxCommandEvent& evt)
 {
+	long roundINT;
+	// if the round number text box is not empty and the tournament has not started yet, set the number of rounds in the tournament to the value in the text box
+	if (roundNumber && game.getRoundNumber() == 0){
+		roundNumber->GetValue().ToLong(&roundINT);
+		game.SetRounds((int)roundINT);
+	}
+	if (game.getPlayersSize() < 2) {
+		wxLogStatus("Not enough players to start the tournament.");
+		return;
+	}
+	if (game.getRounds() < game.getRoundNumber()) {
+		wxLogStatus("Tournament concluded showing pairings");
+		showPlayers();
+		return;
+	}
 	
 	// clear the panel and create new controls for showing the players in the tournament
 	wxBoxSizer* Hsizer = new wxBoxSizer(wxHORIZONTAL);
@@ -191,14 +220,20 @@ void mainframe::startTourney(wxCommandEvent& evt)
 
 	panel->SetSizer(sizer);
 
-	// headers for pairings
-	Hsizer->Add(new wxStaticText(panel, wxID_ANY, "Player, WR VS Player, WR"), 1, wxALIGN_CENTER | wxALL, 3);
+	// to ensure that it is not auto-generated every time past the first 
+	if(game.getRoundNumber() == 0)
+		game.PlayRound();
+
+
+	// headers for pairings and round number
+	wxString roundText = wxString::Format("Round %d", game.getRoundNumber());
+
+	Hsizer->Add(new wxStaticText(panel, wxID_ANY, roundText), 1, wxALIGN_CENTER | wxALL, 3);
+	Hsizer->Add(new wxStaticText(panel, wxID_ANY, "Player 1, WR VS Player 2, WR"), 1, wxALIGN_CENTER | wxALL, 3);
 	Hsizer->Add(new wxStaticText(panel, wxID_ANY, "Set score:"), 1, wxALIGN_CENTER | wxALL, 3);
 
 	sizer->Add(Hsizer, 0, wxEXPAND);
 	sizer->AddSpacer(10);
-	// Start round
-	game.PlayRound();
 	// get the pairings from the game and display them in the panel, along with buttons to set the score for each pairing
 	vector<string> pairings = game.GetPairing();
 	std::vector<std::pair<Player*, Player*>> paired = game.GetPairings();
@@ -238,10 +273,18 @@ void mainframe::startTourney(wxCommandEvent& evt)
 			add2Button->Bind(wxEVT_BUTTON, [this, i, k](wxCommandEvent& event) {
 				this->OnAddScore(event, i, k);
 				});
+
 		}
+		sizer->AddSpacer(20);
+
 		/*PlayerListSizer->Add(Fsizer, 0, wxEXPAND, 0);*/
 		sizer->Add(PlayerListSizer, 0, wxBOTTOM, 3);
 	}
+	// sets button to start the tournament
+	wxButton* addTButton = new wxButton(panel, wxID_ANY, "Next round");
+	Fsizer->Add(addTButton, 1, wxALIGN_CENTER_VERTICAL, 4);
+	addTButton->Bind(wxEVT_BUTTON, &mainframe::OnNextRound, this);
+	sizer->Add(Fsizer, 1, wxEXPAND, 0);
 	panel->Layout();
 }
 //-------------------------------------------------------------------------------------------------------------
@@ -262,5 +305,11 @@ void mainframe::OnAddScore(wxCommandEvent& evt,int p1, int p2)
 		// if there is a bye, just set the player with the bye to have tied
 		game.setScore(game.GetPlayer(p1), nullptr, 't');
 	}
-	startTourney(evt);
+	startAndNextRound(evt);
 }
+//-------------------------------------------------------------------------------------------------------------
+void mainframe::OnNextRound(wxCommandEvent& evt) {
+	game.PlayRound();
+	startAndNextRound(evt);
+}
+//-------------------------------------------------------------------------------------------------------------

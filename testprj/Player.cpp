@@ -50,19 +50,36 @@ int Player::GetWR() const {
 }
 int Player::GetOWR() const {
     int total = 0;
-    int win = 0;
-    for(int i = 0; i < opponents.size(); i++){
-        Player* p = opponents.at(i);
-         total += p->GetWins() + p->GetLosses() + p->GetTies();
-         win += p->GetWins();
+    int wr = 0;
+    //for(int i = 0; i < opponents.size(); i++){
+    //    Player* p = opponents.at(i);
+    //    total += p->GetWins() + p->GetLosses() + p->GetTies();
+    //    win += p->GetWins();
+    //}
+    for (auto& p: opponents) {
+        wr += p->GetWR();
+		total = p->opponents.size();
     }
     if (total == 0) return 0;
 
-    return (wins * 100 / total);
+    return (wr / total);
 }
-//double Player::GetOOWR() const {
-//
-//}
+int Player::GetOOWR() const {
+    int total = 0;
+    int wr = 0;
+
+    for (auto& p : opponents) {
+        for(auto& o : p->opponents) {
+            if (o != this) {
+                wr += o->GetWR();
+                total++;
+            }
+		}
+    }
+    if (total == 0) return 0;
+
+    return (wr  / total);
+}
 int Player::GetWins() const {
     return wins;
 }

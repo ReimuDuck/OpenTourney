@@ -25,12 +25,13 @@ private:
 	void removePlayer(wxCommandEvent& evt);
 	void createControls();
 	void onAddPlayer(wxCommandEvent& evt);
+	void OnNextRound(wxCommandEvent& evt);
 	void OnTextChanged(wxCommandEvent& evt);
 	void showPlayers();
-	void startTourney(wxCommandEvent& evt);
+	void startAndNextRound(wxCommandEvent& evt);
 	void OnAddScore(wxCommandEvent& evt, int p1, int p2);
 
-	std::vector<wxTextCtrl*> textBoxes;
+	wxTextCtrl* roundNumber;
 	wxTextCtrl* fName;
 	wxTextCtrl* lName;
 	wxTextCtrl* ID;
