@@ -38,9 +38,10 @@ void mainframe::createControls() {
 	//todo: add save and load functionality
 	fileMenu->Append(wxID_EXIT, "Save", "Save to CSV");
 	menuBar->Append(fileMenu, "File");
-
-	tourneyMenu->Append(wxID_ANY, "Add Player", "Add a new competitor");
-	menuBar->Append(tourneyMenu, "Options");
+	
+	// Commented out unsure if I want to keep it
+	/*tourneyMenu->Append(wxID_ANY, "Add Player", "Add a new competitor");
+	menuBar->Append(tourneyMenu, "Options");*/
 
 	tourneyMenu->Bind(wxEVT_COMMAND_MENU_SELECTED, &mainframe::onAddPlayer, this, wxID_ANY);
 
@@ -143,8 +144,8 @@ void mainframe::showPlayers()
 	}
 
 
-	// sets button to remove the most recently added player, only shows if there is at least one player in the tournament or if the tournament has not started yet
-	if (game.getPlayersSize() != 0 && !game.getRounds()) {
+	// sets button to remove the most recently added player, only shows if there is at least 2 players in the tournament or if the tournament has not started yet
+	if (game.getPlayersSize() > 1 && !game.getRounds()) {
 		wxButton* addButton = new wxButton(panel, wxID_ANY, "-", wxDefaultPosition, wxSize(30, 30));
 		sizer->Add(addButton, 0, wxALL);
 		addButton->Bind(wxEVT_BUTTON, &mainframe::removePlayer, this);
