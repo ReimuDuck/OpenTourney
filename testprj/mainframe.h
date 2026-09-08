@@ -18,11 +18,14 @@ private:
 	wxBoxSizer* sizer;
 	wxMenuBar* menuBar;
 	wxMenu* tourneyMenu;
+	wxMenu* fileMenu;
 	wxOverlay* overlay;
 	wxFont font;
 	wxCheckBox* checkScore;
 
 	void removePlayer(wxCommandEvent& evt);
+	std::string checkFileExists();
+	void cvvCreate(wxCommandEvent& evt);
 	void createControls();
 	void onAddPlayer(wxCommandEvent& evt);
 	void OnNextRound(wxCommandEvent& evt);

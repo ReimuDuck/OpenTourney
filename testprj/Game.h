@@ -12,6 +12,7 @@ public:
 
     vector<string> GetPairing() ;
     std::string GetStandings();
+    std::string CVVStandings();
 	int getRoundNumber() const { return roundNumber; }
 	int getRounds() const { return rounds; }
 

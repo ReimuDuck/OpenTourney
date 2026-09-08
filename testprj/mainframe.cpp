@@ -3,6 +3,7 @@
 #include "Game.h"
 #include <wx/wx.h>
 #include <sstream>
+#include <fstream> 
 #include <string>
 #include <vector>
 //KNOWN BUGS/TODO:
@@ -33,11 +34,12 @@ void mainframe::createControls() {
 
 	menuBar = new wxMenuBar();
 	tourneyMenu = new wxMenu();
-	wxMenu* fileMenu = new wxMenu();
+	fileMenu = new wxMenu();
 
 	//todo: add save and load functionality
 	fileMenu->Append(wxID_EXIT, "Save", "Save to CSV");
 	menuBar->Append(fileMenu, "File");
+	fileMenu->Bind(wxEVT_COMMAND_MENU_SELECTED, &mainframe::cvvCreate, this, wxID_ANY);
 	
 	// Commented out unsure if I want to keep it
 	/*tourneyMenu->Append(wxID_ANY, "Add Player", "Add a new competitor");
@@ -46,8 +48,8 @@ void mainframe::createControls() {
 	tourneyMenu->Bind(wxEVT_COMMAND_MENU_SELECTED, &mainframe::onAddPlayer, this, wxID_ANY);
 
 	statusBar = CreateStatusBar();
-	
-	game.FillListTest();
+	// uncomment for testing purposes
+	/*game.FillListTest();*/
 	showPlayers();
 	SetMenuBar(menuBar);
 }
@@ -103,6 +105,37 @@ void mainframe::removePlayer(wxCommandEvent& evt)
 {
 	game.removeLatestPlayer();
 	showPlayers();
+}
+//-------------------------------------------------------------------------------------------------------------
+std::string mainframe::checkFileExists() {
+	bool live = true;
+	int i = 0;
+	while (live) {
+		string line = "standings";
+		line += to_string(i);
+		line += ".csv";
+		std::ifstream file(line);
+		file.good() ? i++ : live = false;
+		if(live == false) {
+			return line;
+		}
+	}
+	
+}
+//-------------------------------------------------------------------------------------------------------------
+void mainframe::cvvCreate(wxCommandEvent& evt)
+{	
+	std::string standingFile = checkFileExists();
+	std::ofstream standingsFile(standingFile);
+	std::string standings = game.CVVStandings();
+	std::stringstream ss(standings);
+	std::string line;
+	// for each player in the standings, create a new static text control and add it to the panel
+	standingsFile << "NAME, ID, WR" << std::endl;
+	while (std::getline(ss, line)) {
+		standingsFile << line << std::endl;
+	}
+	standingsFile.close();
 }
 //-------------------------------------------------------------------------------------------------------------
 void mainframe::showPlayers()
@@ -209,6 +242,7 @@ void mainframe::startAndNextRound(wxCommandEvent& evt)
 	if (game.getRounds() < game.getRoundNumber()) {
 		wxLogStatus("Tournament concluded showing pairings");
 		showPlayers();
+		cvvCreate(evt);
 		return;
 	}
 	
