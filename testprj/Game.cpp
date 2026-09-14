@@ -7,26 +7,43 @@
 #include <random>
 #include <iomanip>
 //-------------------------------------------------------------------------------------------------------------
+Game::~Game() {
+    for (auto& pair : players) {
+        delete pair.second;
+    }
+    for (Player* p : eliminated) {
+        delete p;
+    }
+    players.clear();
+    eliminated.clear();
+    sortedPlayers.clear();
+    pairings.clear();
+    pairingResults.clear();
+}
+//-------------------------------------------------------------------------------------------------------------
 void Game::SortPlayers() {
-    if(players.empty()){
-        return;
-	}
     sortedPlayers.clear();
 
-	// Copy players from the unordered_map to the vector
-    for (const auto& pair : players) {
-        sortedPlayers.push_back(pair.second);
+    if (players.empty()) {
+        return;
     }
-	// Sort the vector based on WR OWR then OOWR
+
+    // Copy players from the unordered_map to the vector
+    for (const auto& pair : players) {
+        if (pair.second) {
+            sortedPlayers.push_back(pair.second);
+        }
+    }
+    // Sort the vector based on WR OWR then OOWR
     std::sort(sortedPlayers.begin(), sortedPlayers.end(), [this](Player* a, Player* b) {
         if (roundNumber == 2) {
             if (a->GetWR() != b->GetWR()) return a->GetWR() > b->GetWR();
             return a->GetID() < b->GetID(); // tie-breaker
         }
-        else if(roundNumber==3) {
+        else if (roundNumber == 3) {
             if (a->GetWR() != b->GetWR()) return a->GetWR() > b->GetWR();
             if (a->GetOWR() != b->GetOWR()) return a->GetOWR() > b->GetOWR();
-            return a->GetID() < b->GetID(); 
+            return a->GetID() < b->GetID();
         }
         else {
             if (a->GetWR() != b->GetWR()) return a->GetWR() > b->GetWR();
@@ -34,27 +51,31 @@ void Game::SortPlayers() {
             if (a->GetOOWR() != b->GetOOWR()) return a->GetOOWR() > b->GetOOWR();
             return a->GetID() < b->GetID();
         }
-    });
+        });
 }
 //-------------------------------------------------------------------------------------------------------------
-void Game::AddPlayer(Player* p){
-	players[p->GetID()] = p;
+void Game::AddPlayer(Player* p) {
+    if (!p) {
+        return;
+    }
+
+    auto it = players.find(p->GetID());
+    if (it != players.end()) {
+        return; // duplicate ID: reject
+    }
+
+    players[p->GetID()] = p;
+    sortedPlayers.clear(); // force a re-sort before the next use
 }
 //-------------------------------------------------------------------------------------------------------------
-// to be removed
+// test
 void Game::FillListTest() {
 
-    Player* p = new Player("RED", "RED", 1);
-    AddPlayer(p);
-   /* Player* C = new Player("GOLD", "GOLD", 2);
-    AddPlayer(C);*/
-    Player* V = new Player("HHOLLOW", "HHOLLOW", 31);
-    AddPlayer(V);
-    Player* D = new Player("EYE", "EYE", 3121);
-    AddPlayer(D);
-    Player* W = new Player("XMAS", "XMAS", 331);
-    AddPlayer(W);
-
+    for (int i = 1; i <= 10; ++i) {
+        std::string name = "PLAYER" + std::to_string(i);
+        Player* p = new Player(name, name, i);
+        AddPlayer(p);
+    }
 }
 //-------------------------------------------------------------------------------------------------------------
 Player* Game::GetPlayer(int id) const
@@ -64,10 +85,23 @@ Player* Game::GetPlayer(int id) const
         return it->second;
     }
     // Return nullptr if player with the given ID is not found
-	return nullptr; 
+    return nullptr;
 }
 //-------------------------------------------------------------------------------------------------------------
+void Game::RetirePlayer(Player* p) {
+    if (!p) {
+        return;
+    }
 
+    auto it = players.find(p->GetID());
+    if (it != players.end() && it->second == p) {
+        players.erase(it);
+        eliminated.push_back(p);
+    }
+
+    sortedPlayers.erase(std::remove(sortedPlayers.begin(), sortedPlayers.end(), p), sortedPlayers.end());
+}
+//-------------------------------------------------------------------------------------------------------------
 void Game::removeLatestPlayer() {
     if (sortedPlayers.empty()) {
         return;
@@ -75,23 +109,25 @@ void Game::removeLatestPlayer() {
 
     Player* last = sortedPlayers.back();
     if (!last) {
+        sortedPlayers.pop_back();
         return;
     }
 
-    auto it = players.find(last->GetID());
-    // If not found, avoid dereferencing the end iterator
-    if (it == players.end()) {
-        sortedPlayers.erase(std::remove(sortedPlayers.begin(), sortedPlayers.end(), last), sortedPlayers.end());
+    RetirePlayer(last);
+}
+//-------------------------------------------------------------------------------------------------------------
+void Game::removeFirstPlayer() {
+    if (sortedPlayers.empty()) {
         return;
     }
 
-    // Remove mapping then remove any stale copies from sortedPlayers, then delete
-    Player* p = it->second;
-    players.erase(it);
+    Player* first = sortedPlayers.front();
+    if (!first) {
+        sortedPlayers.erase(sortedPlayers.begin());
+        return;
+    }
 
-    sortedPlayers.erase(std::remove(sortedPlayers.begin(), sortedPlayers.end(), p), sortedPlayers.end());
-
-    delete p;
+    RetirePlayer(first);
 }
 //------------------------------------------------------------------------------------------------------------- TO REMOVE
 void Game::SetRounds(int r) {
@@ -99,17 +135,67 @@ void Game::SetRounds(int r) {
 }
 //-------------------------------------------------------------------------------------------------------------
 void Game::PlayRound() {
-	roundNumber++;
+    roundNumber++;
     SetPairings();
     GetPairing();
     return;
+}
+//-------------------------------------------------------------------------------------------------------------
+void Game::PlayTopCut() {
+    if (!topCut) {
+        topCut = true;
+        roundNumber = 1;   // <-- new
+    }
+    roundNumber++;
+    setPairingsTopCut();
+    GetPairing();
+    return;
+}
+//-------------------------------------------------------------------------------------------------------------
+void Game::ResetPairings() {
+    pairings.clear();
+    pairingResults.clear();
+}
+//-------------------------------------------------------------------------------------------------------------
+void Game::createPairings() {
+    if (sortedPlayers.empty()) {
+        return;
+    }
+
+    // If odd, make sure whoever ends up last hasn't already had a bye
+    if (sortedPlayers.size() % 2 != 0) {
+        std::size_t lastIdx = sortedPlayers.size() - 1;
+        if (sortedPlayers[lastIdx]->HadBye()) {
+            for (std::size_t j = lastIdx; j-- > 0; ) {
+                if (!sortedPlayers[j]->HadBye()) {
+                    std::swap(sortedPlayers[j], sortedPlayers[lastIdx]);
+                    break;
+                }
+            }
+        }
+    }
+    // Create pairings based on wr for rounds
+    for (std::size_t i = 0; i < sortedPlayers.size(); i += 2) {
+        if (i + 1 < sortedPlayers.size()) {
+            pairings.emplace_back(sortedPlayers[i], sortedPlayers[i + 1]);
+            pairingResults.push_back('\0'); // awaiting a result
+            sortedPlayers[i]->AddOpponent(sortedPlayers[i + 1]);
+            sortedPlayers[i + 1]->AddOpponent(sortedPlayers[i]);
+        }
+        else {
+            pairings.emplace_back(sortedPlayers[i], nullptr);
+            pairingResults.push_back('B');   // bye: scored here and nowhere else
+            sortedPlayers[i]->SetScore('T'); // bye counts as a tie
+            sortedPlayers[i]->SetHadBye(true);
+        }
+    }
 }
 //-------------------------------------------------------------------------------------------------------------
 void Game::SetPairings() {
     if (players.empty()) {
         return;
     }
-    pairings.clear();
+    ResetPairings();
     SortPlayers();
 
     switch (roundNumber) {
@@ -119,98 +205,140 @@ void Game::SetPairings() {
         std::mt19937 g(rd());
         // Shuffle the sortedPlayers vector to create random pairings for the first round
         std::shuffle(sortedPlayers.begin(), sortedPlayers.end(), g);
-
-        // If odd, make sure whoever ends up last hasn't already had a bye
-        if (sortedPlayers.size() % 2 != 0) {
-            int lastIdx = static_cast<int>(sortedPlayers.size()) - 1;
-            if (sortedPlayers[lastIdx]->HadBye()) {
-                for (int j = lastIdx - 1; j >= 0; --j) {
-                    if (!sortedPlayers[j]->HadBye()) {
-                        std::swap(sortedPlayers[j], sortedPlayers[lastIdx]);
-                        break;
-                    }
-                }
-            }
-        }
-
-        for (int i = 0; i < sortedPlayers.size(); i += 2) {
-            if (i + 1 < sortedPlayers.size()) {
-                pairings.emplace_back(sortedPlayers[i], sortedPlayers[i + 1]);
-                sortedPlayers[i]->AddOpponent(sortedPlayers[i + 1]);
-                sortedPlayers[i + 1]->AddOpponent(sortedPlayers[i]);
-            }
-            else {
-                pairings.emplace_back(sortedPlayers[i], nullptr);
-                sortedPlayers[i]->SetScore('T'); // bye counts as a tie
-                sortedPlayers[i]->SetHadBye(true);
-            }
-        }
+        createPairings();
         break;
     }
 
     default:
-        // Create pairings based on wr for subsequent rounds
-        // player without a prior bye is the one who ends up last
-        if (sortedPlayers.size() % 2 != 0) {
-            int lastIdx = static_cast<int>(sortedPlayers.size()) - 1;
-            if (sortedPlayers[lastIdx]->HadBye()) {
-                for (int j = lastIdx - 1; j >= 0; --j) {
-                    if (!sortedPlayers[j]->HadBye()) {
-                        std::swap(sortedPlayers[j], sortedPlayers[lastIdx]);
-                        break;
-                    }
-                }
-            }
-        }
-
-        for (int i = 0; i < sortedPlayers.size(); i += 2) {
-            if (i + 1 < sortedPlayers.size()) {
-                pairings.emplace_back(sortedPlayers[i], sortedPlayers[i + 1]);
-                sortedPlayers[i]->AddOpponent(sortedPlayers[i + 1]);
-                sortedPlayers[i + 1]->AddOpponent(sortedPlayers[i]);
-            }
-            else {
-                pairings.emplace_back(sortedPlayers[i], nullptr);
-                sortedPlayers[i]->SetScore('T');
-                sortedPlayers[i]->SetHadBye(true);
-            }
-        }
+        createPairings();
         break;
     }
 }
 //-------------------------------------------------------------------------------------------------------------
-void Game::setScore(Player* w, Player* l,char t) {
-    // if tie
-    if(t == 't'){
+void Game::setPairingsTopCut() {
+    if (players.empty()) {
+        return;
+    }
+    if (4 < players.size()) {
+        for (int i = 4; i <= players.size(); i++) {
+            removeLatestPlayer();
+        }
+    }
+    ResetPairings();
+    SortPlayers();
+
+    if (roundNumber == 1) {
+        createPairings();
+        return;
+    }
+    if (sortedPlayers.size() < 4) {
+        return;   // cut is done
+    }
+
+    removeLatestPlayer();
+    removeFirstPlayer();
+
+    ResetPairings();
+    createPairings();
+}
+//-------------------------------------------------------------------------------------------------------------
+int Game::FindPairingIndex(const Player* a, const Player* b) const {
+    for (std::size_t i = 0; i < pairings.size(); ++i) {
+        const Player* first = pairings[i].first;
+        const Player* second = pairings[i].second;
+        if ((first == a && second == b) || (first == b && second == a)) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+//-------------------------------------------------------------------------------------------------------------
+bool Game::IsPairingScored(std::size_t index) const {
+    if (index >= pairingResults.size()) {
+        return false;
+    }
+    return pairingResults[index] != '\0';
+}
+//-------------------------------------------------------------------------------------------------------------
+char Game::GetPairingResult(std::size_t index) const {
+    if (index >= pairingResults.size()) {
+        return '\0';
+    }
+    return pairingResults[index];
+}
+//-------------------------------------------------------------------------------------------------------------
+bool Game::AllPairingsScored() const {
+    if (pairingResults.empty()) {
+        return false;
+    }
+    for (char c : pairingResults) {
+        if (c == '\0') {
+            return false;
+        }
+    }
+    return true;
+}
+//-------------------------------------------------------------------------------------------------------------
+bool Game::setScore(Player* w, Player* l, char t) {
+    if (!w) {
+        return false;
+    }
+
+    const int idx = FindPairingIndex(w, l);
+
+    // Refuse to record a second result for the same pairing in a round.
+    if (idx >= 0 && pairingResults[static_cast<std::size_t>(idx)] != '\0') {
+        return false;
+    }
+
+    // A bye is already scored as a tie in createPairings(); scoring it again
+    // here gave the player two ties for one round.
+    if (!l) {
+        return false;
+    }
+
+    char result;
+    // accept either case for a tie
+    if (t == 't' || t == 'T') {
         w->SetScore('T');
         l->SetScore('T');
-        return;
-	}
-	// if bye set tie for player with bye
-    if ( !l) {
-        w->SetScore('T');
-        return;
-	}
+        result = 'T';
+    }
+    else {
+        w->SetScore('W');
+        l->SetScore('L');
+        // Record the outcome from player 1's point of view, since callers pass
+        // the winner first regardless of pairing order.
+        result = (idx >= 0 && pairings[static_cast<std::size_t>(idx)].first == w) ? 'W' : 'L';
+    }
 
-	w->SetScore('W');
-	l->SetScore('L');
+    if (idx >= 0) {
+        pairingResults[static_cast<std::size_t>(idx)] = result;
+    }
+    return true;
 }
 //------------------------------------------------------------------------------------------------------------- Rename later
-vector<string> Game::GetPairing(){
-    vector<string> results;
+std::vector<std::string> Game::GetPairing() {
+    std::vector<std::string> results;
     std::string result1;
     std::string result2;
-    if(pairings.empty()){
+    if (pairings.empty()) {
         results.push_back("No pairings to display");
         return results;
-	}
-	// Generate pairings based on the current round
+    }
+    // Generate pairings based on the current round
     for (const auto& pair : pairings) {
+        if (!pair.first) {
+            // keep the indices aligned with the pairings vector
+            results.push_back("");
+            continue;
+        }
+
         result1 += pair.first->GetName();
-		result1 += " ------- " + std::to_string(pair.first->GetWins()) +"W/"
-            + std::to_string(pair.first->GetLosses()) + "L/" 
+        result1 += " ------- " + std::to_string(pair.first->GetWins()) + "W/"
+            + std::to_string(pair.first->GetLosses()) + "L/"
             + std::to_string(pair.first->GetTies()) + "T";
-		result1 += " - " + std::to_string(pair.first->GetWR()) + "%";
+        result1 += " - " + std::to_string(pair.first->GetWR()) + "%";
         result1 += " vs ";
         if (pair.second) {
             result2 += pair.second->GetName();
@@ -220,11 +348,11 @@ vector<string> Game::GetPairing(){
             result2 += " - " + std::to_string(pair.second->GetWR()) + "%\n";
         }
         else {
-			result2 += "      BYE\n";
+            result2 += "      BYE\n";
         }
         results.push_back(result1 + result2);
-		result1.clear();
-		result2.clear();
+        result1.clear();
+        result2.clear();
     }
 
     return results;
@@ -235,10 +363,10 @@ std::string Game::GetStandings() {
     if (sortedPlayers.empty()) {
         return "No players to display";
     }
-    
+
     std::string result;
-    for (int i = 0; i < sortedPlayers.size(); i++) {
-		result +=  std::to_string(i + 1) + ". " + sortedPlayers[i]->GetName() + " - " + std::to_string(sortedPlayers[i]->GetID()) + " - " + std::to_string(sortedPlayers[i]->GetWR())+ " " + std::to_string(sortedPlayers[i]->GetOWR()) + " " + std::to_string(sortedPlayers[i]->GetOOWR()) + "%\n";
+    for (std::size_t i = 0; i < sortedPlayers.size(); i++) {
+        result += std::to_string(i + 1) + ". " + sortedPlayers[i]->GetName() + " - " + std::to_string(sortedPlayers[i]->GetID()) + " - " + std::to_string(sortedPlayers[i]->GetWR()) + "% " + std::to_string(sortedPlayers[i]->GetOWR()) + "% " + std::to_string(sortedPlayers[i]->GetOOWR()) + "%\n";
     }
     return result;
 }
@@ -250,8 +378,8 @@ std::string Game::CVVStandings() {
     }
 
     std::string result;
-    for (int i = 0; i < sortedPlayers.size(); i++) {
-        result +=  sortedPlayers[i]->GetName() + " , " + std::to_string(sortedPlayers[i]->GetID()) + " , " + std::to_string(sortedPlayers[i]->GetWR()) + " " + std::to_string(sortedPlayers[i]->GetOWR()) + " " + std::to_string(sortedPlayers[i]->GetOOWR()) + "%\n";
+    for (std::size_t i = 0; i < sortedPlayers.size(); i++) {
+        result += sortedPlayers[i]->GetName() + " , " + std::to_string(sortedPlayers[i]->GetID()) + " , " + std::to_string(sortedPlayers[i]->GetWR()) + "% " + std::to_string(sortedPlayers[i]->GetOWR()) + "% " + std::to_string(sortedPlayers[i]->GetOOWR()) + "%\n";
     }
     return result;
 }

@@ -22,13 +22,14 @@ private:
 	wxOverlay* overlay;
 	wxFont font;
 	wxCheckBox* checkScore;
-
+	void topCut();
 	void removePlayer(wxCommandEvent& evt);
 	std::string checkFileExists();
 	void cvvCreate(wxCommandEvent& evt);
 	void createControls();
 	void onAddPlayer(wxCommandEvent& evt);
 	void OnNextRound(wxCommandEvent& evt);
+	void OnTopCut(wxCommandEvent& evt);
 	void OnTextChanged(wxCommandEvent& evt);
 	void showPlayers();
 	void startAndNextRound(wxCommandEvent& evt);
