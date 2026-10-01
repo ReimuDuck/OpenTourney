@@ -15,14 +15,20 @@ private:
 	Player* player;
 	Game game;
 	
-	wxSimplebook* book;
 	wxStatusBar* statusBar;
-	wxScrolledWindow* panel;
-	wxScrolledWindow* panel1;
-	wxScrolledWindow* panel2;
-	wxScrolledWindow* panel3;
-	wxScrolledWindow* panel4;
+
+	wxSimplebook* book;
+	wxScrolledWindow* playersPage;
+	wxScrolledWindow* addPage;
+	wxScrolledWindow* removePage;
+	wxScrolledWindow* roundPage;
+	wxScrolledWindow* cutPage;
+
+	wxScrolledWindow* makePage();
+	void showPage(wxScrolledWindow* page);
+
 	wxBoxSizer* sizer;
+	wxBoxSizer* PlayerListSizer;
 	wxMenuBar* menuBar;
 	wxMenu* tourneyMenu;
 	wxMenu* fileMenu;
@@ -33,9 +39,9 @@ private:
 	std::string checkFileExists();
 	void cvvCreate(wxCommandEvent& evt);
 	void createControls();
-	void refreshLayout();
 	void onAddPlayer(wxCommandEvent& evt);
 	void onRemovePlayer(wxCommandEvent& evt);
+	void initRounds();
 	void OnNextRound(wxCommandEvent& evt);
 	void OnTopCut(wxCommandEvent& evt);
 	void showPlayers();

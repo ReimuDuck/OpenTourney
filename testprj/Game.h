@@ -29,8 +29,7 @@ public:
     const std::vector<std::pair<Player*, Player*>>& GetPairings() const { return pairings; }
 
     // Records the result for this pairing. Returns false and changes nothing if
-    // the pairing has already been scored this round, or if it is a bye (byes
-    // are scored automatically when the pairing is created).
+    // the pairing has already been scored this round, or if it is a bye 
     bool setScore(Player* w, Player* l, char t);
 
     // Scoring state for the current round's pairings.
@@ -39,7 +38,9 @@ public:
     bool AllPairingsScored() const;
 
     void SetRounds(int r);
-
+    // flip flop switch
+    void setPaired() { paired = !paired; }
+    bool getPaired() const { return paired; }
     void PlayTopCut();
     void PlayRound();
     void AddPlayer(Player* p);
@@ -65,6 +66,7 @@ private:
     int rounds;
     int roundNumber;
     bool topCut = false;
+    bool paired = false;
 
     std::vector<Player*> sortedPlayers;
     std::unordered_map<int, Player*> players;

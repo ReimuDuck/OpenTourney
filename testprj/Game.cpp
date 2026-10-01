@@ -75,6 +75,11 @@ void Game::AddPlayer(Player* p) {
 //-------------------------------------------------------------------------------------------------------------
 // purpose = 0 add, purpose = 1 remove.
 void Game::BeegQueue(Player* p,int purpose) {
+    for (auto& pair : queue) {
+        
+        if (pair.first == p && (pair.second == purpose)) return;
+        //if (pair.first == p && (pair.second != purpose)) queue.at(pair); find a method to cancel out queues
+    }
     queue.emplace_back(p, purpose);
     return;
 }
@@ -215,8 +220,8 @@ void Game::createPairings() {
         }
         else {
             pairings.emplace_back(sortedPlayers[i], nullptr);
-            pairingResults.push_back('B');   // bye: scored here and nowhere else
-            sortedPlayers[i]->SetScore('T'); // bye counts as a tie
+            pairingResults.push_back('B');   
+            sortedPlayers[i]->SetScore('W'); // bye counts as a win
             sortedPlayers[i]->SetHadBye(true);
         }
     }
@@ -322,8 +327,6 @@ bool Game::setScore(Player* w, Player* l, char t) {
         return false;
     }
 
-    // A bye is already scored as a tie in createPairings(); scoring it again
-    // here gave the player two ties for one round.
     if (!l) {
         return false;
     }
@@ -338,8 +341,7 @@ bool Game::setScore(Player* w, Player* l, char t) {
     else {
         w->SetScore('W');
         l->SetScore('L');
-        // Record the outcome from player 1's point of view, since callers pass
-        // the winner first regardless of pairing order.
+        // Record the outcome from player 1 point of view
         result = (idx >= 0 && pairings[static_cast<std::size_t>(idx)].first == w) ? 'W' : 'L';
     }
 
@@ -399,12 +401,16 @@ std::string Game::GetStandings() {
 
     std::string result;
     for (std::size_t i = 0; i < sortedPlayers.size(); i++) {
-        result += std::to_string(i + 1) + ". " + sortedPlayers[i]->GetName() + " - " + std::to_string(sortedPlayers[i]->GetID()) + " - " + std::to_string(sortedPlayers[i]->GetWR()) + "% " + std::to_string(sortedPlayers[i]->GetOWR()) + "% " + std::to_string(sortedPlayers[i]->GetOOWR()) + "%\n";
+        result += std::to_string(i + 1) + ". " + sortedPlayers[i]->GetName() + "       ---      " + std::to_string(sortedPlayers[i]->GetID()) + "      ---     " 
+            + std::to_string(sortedPlayers[i]->GetWins()) + " - " + std::to_string(sortedPlayers[i]->GetLosses()) + " - " + std::to_string(sortedPlayers[i]->GetTies()) + "      ---       "
+            + std::to_string(sortedPlayers[i]->GetWR()) + "% " + std::to_string(sortedPlayers[i]->GetOWR()) + "% " + std::to_string(sortedPlayers[i]->GetOOWR()) + "%\n";
     }
     if (!eliminated.empty() && roundNumber > 0) {
         result += "DROPPED: \n";
         for (std::size_t i = 0; i < eliminated.size(); i++) {
-            result += eliminated[i]->GetName() + " , " + std::to_string(eliminated[i]->GetID()) + " , " + std::to_string(eliminated[i]->GetWR()) + "% " + std::to_string(eliminated[i]->GetOWR()) + "% " + std::to_string(eliminated[i]->GetOOWR()) + "%\n";
+            result += eliminated[i]->GetName() + "      ---       " + std::to_string(eliminated[i]->GetID()) + "      ---       "
+            + std::to_string(eliminated[i]->GetWins()) + " - " + std::to_string(eliminated[i]->GetLosses()) + " - " + std::to_string(eliminated[i]->GetTies()) + "      ---       "
+            + std::to_string(eliminated[i]->GetWR()) + "% " + std::to_string(eliminated[i]->GetOWR()) + "% " + std::to_string(eliminated[i]->GetOOWR()) + "%\n";
         }
     }
 

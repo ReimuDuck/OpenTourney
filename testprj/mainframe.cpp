@@ -2,6 +2,7 @@
 #include "Player.h"
 #include "Game.h"
 #include <wx/wx.h>
+#include <wx/simplebook.h>
 #include <sstream>
 #include <fstream> 
 #include <string>
@@ -38,14 +39,16 @@ mainframe::mainframe(const wxString& title)
 
 //-------------------------------------------------------------------------------------------------------------
 void mainframe::createControls() {
-	// initializes the panel and menu bar, and shows the players in the tournament
-	wxFont Hfont(15, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
-
 	font = wxFont(12, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 
-	panel = new wxScrolledWindow(this, wxID_ANY);
-	panel->SetScrollRate(0, 10);
-	panel->SetFont(Hfont);
+	book = new wxSimplebook(this, wxID_ANY);
+
+	playersPage = makePage();
+	addPage = makePage();
+	removePage = makePage();
+	roundPage = makePage();
+	cutPage = makePage();
+
 	sizer = nullptr;
 	fName = nullptr;
 	lName = nullptr;
@@ -56,103 +59,105 @@ void mainframe::createControls() {
 	tourneyMenu = new wxMenu();
 	fileMenu = new wxMenu();
 
-	//todo: add load functionality
-
 	fileMenu->Append(wxID_SAVE, "Save", "Save to CSV");
 	menuBar->Append(fileMenu, "File");
 	fileMenu->Bind(wxEVT_COMMAND_MENU_SELECTED, &mainframe::cvvCreate, this, wxID_SAVE);
 
-	// Commented out unsure if I want to keep it
 	wxMenuItem* addItem = tourneyMenu->Append(wxID_ANY, "Add Player", "Add a new competitor");
 	wxMenuItem* removeItem = tourneyMenu->Append(wxID_ANY, "Remove Player", "Remove a competitor");
-
-	menuBar->Append(tourneyMenu, "Options");   // once, after the items are added
+	menuBar->Append(tourneyMenu, "Options");
 
 	Bind(wxEVT_MENU, &mainframe::onAddPlayer, this, addItem->GetId());
 	Bind(wxEVT_MENU, &mainframe::onRemovePlayer, this, removeItem->GetId());
 
-
 	statusBar = CreateStatusBar();
-	// uncomment for testing purposes
-	game.FillListTest();
+	/*game.FillListTest();*/
 	showPlayers();
 	SetMenuBar(menuBar);
 }
 //-------------------------------------------------------------------------------------------------------------
-void mainframe::refreshLayout() {
-	panel->Layout();
-	panel->FitInside();
+wxScrolledWindow* mainframe::makePage() {
+	wxScrolledWindow* page = new wxScrolledWindow(book, wxID_ANY);
+	page->SetScrollRate(0, 10);
+	page->SetFont(wxFont(15, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+	book->AddPage(page, "");
+	return page;
 }
-
+//-------------------------------------------------------------------------------------------------------------
+void mainframe::showPage(wxScrolledWindow* page) {
+	page->Layout();
+	page->FitInside();
+	book->SetSelection(book->FindPage(page));
+}
 //-------------------------------------------------------------------------------------------------------------
 void mainframe::onAddPlayer(wxCommandEvent& evt)
 {
 	// clear the panel and create new controls for adding a player
-	panel->DestroyChildren();
+	addPage->DestroyChildren();
 	fName = lName = ID = nullptr;
 	roundNumber = nullptr;
 
 	sizer = new wxBoxSizer(wxHORIZONTAL);
-	panel->SetSizer(sizer);
-	sizer->Add(new wxStaticText(panel, wxID_ANY, "First Name:"), 0, wxALL, 3);
+	addPage->SetSizer(sizer);
+	sizer->Add(new wxStaticText(addPage, wxID_ANY, "First Name:"), 0, wxALL, 3);
 
 	// text boxes for name, id, and a button to add the player to the tournament
 
-	wxTextCtrl* txt = new wxTextCtrl(panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(150, 30));
+	wxTextCtrl* txt = new wxTextCtrl(addPage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(150, 30));
 	txt->SetFont(font);
 	sizer->Add(txt, 0, wxALL, 5);
 	// just to show the text in the status bar when the user types something in the text box
 	
 	fName = txt;
 
-	sizer->Add(new wxStaticText(panel, wxID_ANY, "Last Name:"), 0, wxALL, 3);
+	sizer->Add(new wxStaticText(addPage, wxID_ANY, "Last Name:"), 0, wxALL, 3);
 
-	wxTextCtrl* txt2 = new wxTextCtrl(panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(150, 30));
+	wxTextCtrl* txt2 = new wxTextCtrl(addPage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(150, 30));
 	txt2->SetFont(font);
 	sizer->Add(txt2, 0, wxALL, 5);
 	
 	lName = txt2;
 
-	sizer->Add(new wxStaticText(panel, wxID_ANY, "ID:"), 0, wxALL, 3);
+	sizer->Add(new wxStaticText(addPage, wxID_ANY, "ID:"), 0, wxALL, 3);
 
-	wxTextCtrl* txt3 = new wxTextCtrl(panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(60, 30));
+	wxTextCtrl* txt3 = new wxTextCtrl(addPage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(60, 30));
 	txt3->SetFont(font);
 	sizer->Add(txt3, 4, wxALL, 5);
 	
 	ID = txt3;
 
-	wxButton* addButton = new wxButton(panel, wxID_ANY, "Add Player");
+	wxButton* addButton = new wxButton(addPage, wxID_ANY, "Add Player");
 	sizer->Add(addButton, 0, wxALL, 5);
 
 	// adds to the tournament when the button is clicked, and shows the updated player list
 	addButton->Bind(wxEVT_BUTTON, &mainframe::OnAddClicked, this);
-	refreshLayout();
+	showPage(addPage);
 }
 //-------------------------------------------------------------------------------------------------------------
 void mainframe::onRemovePlayer(wxCommandEvent& evt)
 {
 	// clear the panel and create new controls for adding a player
-	panel->DestroyChildren();
+	removePage->DestroyChildren();
 	ID = nullptr;
 	roundNumber = nullptr;
 
 	sizer = new wxBoxSizer(wxHORIZONTAL);
-	panel->SetSizer(sizer);
+	removePage->SetSizer(sizer);
 
-	sizer->Add(new wxStaticText(panel, wxID_ANY, "ID:"), 0, wxALL, 3);
+	sizer->Add(new wxStaticText(removePage, wxID_ANY, "ID:"), 0, wxALL, 3);
 
-	wxTextCtrl* txt3 = new wxTextCtrl(panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(60, 30));
+	wxTextCtrl* txt3 = new wxTextCtrl(removePage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(60, 30));
 	txt3->SetFont(font);
 	sizer->Add(txt3, 4, wxALL, 5);
 
 	ID = txt3;
 
-	wxButton* addButton = new wxButton(panel, wxID_ANY, "Remove Player");
+	wxButton* addButton = new wxButton(removePage, wxID_ANY, "Remove Player");
 	sizer->Add(addButton, 0, wxALL, 5);
 
 	// removes from the tournament when the button is clicked, and shows the updated player list
 	addButton->Bind(wxEVT_BUTTON, &mainframe::OnRemoveClicked, this);
-	refreshLayout();
+	showPage(removePage);
 }
 //-------------------------------------------------------------------------------------------------------------
 void mainframe::removePlayer(wxCommandEvent& evt)
@@ -199,19 +204,18 @@ void mainframe::cvvCreate(wxCommandEvent& evt)
 void mainframe::topCut()
 {
 	// clear the panel and create new controls for showing the players in the tournament
-	panel->DestroyChildren();
-	fName = lName = ID = nullptr;
+	cutPage->DestroyChildren();
 	roundNumber = nullptr;
 
 	wxBoxSizer* Hsizer = new wxBoxSizer(wxHORIZONTAL);
 
 	sizer = new wxBoxSizer(wxVERTICAL);
 
-	panel->SetSizer(sizer);
+	cutPage->SetSizer(sizer);
 
 	// headers for player list
-	Hsizer->Add(new wxStaticText(panel, wxID_ANY, "Name:"), 0, wxALIGN_CENTER | wxALL, 3);
-	Hsizer->Add(new wxStaticText(panel, wxID_ANY, "ID:"), 0, wxALIGN_CENTER | wxALL, 3);
+	Hsizer->Add(new wxStaticText(cutPage, wxID_ANY, "Name:"), 0, wxALIGN_CENTER | wxALL, 3);
+	Hsizer->Add(new wxStaticText(cutPage, wxID_ANY, "ID:"), 0, wxALIGN_CENTER | wxALL, 3);
 
 	sizer->Add(Hsizer, 0, wxEXPAND);
 	sizer->AddSpacer(10);
@@ -224,51 +228,50 @@ void mainframe::topCut()
 		wxBoxSizer* PlayerListSizer = new wxBoxSizer(wxHORIZONTAL);
 
 		wxString wxLine = wxString::FromUTF8(line.c_str());
-		wxStaticText* name = new wxStaticText(panel, wxID_ANY, wxLine);
+		wxStaticText* name = new wxStaticText(cutPage, wxID_ANY, wxLine);
 		name->SetFont(font);
 		PlayerListSizer->Add(name, 0, wxALIGN_CENTER_VERTICAL);
 		sizer->Add(PlayerListSizer, 0, wxBOTTOM, 3);
 	}
-	// BUTTON TO START TOP CUT - 30x30 cannot fit the label, let it size itself
-	wxButton* addButton = new wxButton(panel, wxID_ANY, "Top Cut");
+	// BUTTON TO START TOP CUT
+	wxButton* addButton = new wxButton(cutPage, wxID_ANY, "Top Cut");
 	sizer->Add(addButton, 0, wxALL, 5);
 	addButton->Bind(wxEVT_BUTTON, &mainframe::OnTopCut, this);
 
-
-	refreshLayout();
+	showPage(cutPage);
 }
 //-------------------------------------------------------------------------------------------------------------
 void mainframe::showPlayers()
 {
 	// clear the panel and create new controls for showing the players in the tournament
-	panel->DestroyChildren();
-	fName = lName = ID = nullptr;
+	playersPage->DestroyChildren();
 	roundNumber = nullptr;
 
 	wxBoxSizer* Hsizer = new wxBoxSizer(wxHORIZONTAL);
 
 	sizer = new wxBoxSizer(wxVERTICAL);
 
-	panel->SetSizer(sizer);
+	playersPage->SetSizer(sizer);
 
 	// headers for player list
-	Hsizer->Add(new wxStaticText(panel, wxID_ANY, "Name:"), 0, wxALIGN_CENTER | wxALL, 3);
-	Hsizer->Add(new wxStaticText(panel, wxID_ANY, "ID:"), 0, wxALIGN_CENTER | wxALL, 3);
-
+	Hsizer->Add(new wxStaticText(playersPage, wxID_ANY, "Name:"), 0, wxALIGN_CENTER | wxALL, 3);
+	Hsizer->Add(new wxStaticText(playersPage, wxID_ANY, "ID:"), 0, wxALIGN_CENTER | wxALL, 10);
+	Hsizer->Add(new wxStaticText(playersPage, wxID_ANY, "SCORE:"), 0, wxALIGN_CENTER | wxALL, 6);
+	Hsizer->Add(new wxStaticText(playersPage, wxID_ANY, "WR:"), 0, wxALIGN_CENTER | wxALL, 6);
 	sizer->Add(Hsizer, 0, wxEXPAND);
 	sizer->AddSpacer(10);
-	// get the standings from the game and display them in the panel
+	// get the standings from the game and display them in the playersPage
 	// resolves the queue of adding and removing players
 	game.ResolveBeeg();
 	std::string standings = game.GetStandings();
 	std::stringstream ss(standings);
 	std::string line;
-	// for each player in the standings, create a new static text control and add it to the panel
+	// for each player in the standings, create a new static text control and add it to the playersPage
 	while (std::getline(ss, line)) {
 		wxBoxSizer* PlayerListSizer = new wxBoxSizer(wxHORIZONTAL);
 
 		wxString wxLine = wxString::FromUTF8(line.c_str());
-		wxStaticText* name = new wxStaticText(panel, wxID_ANY, wxLine);
+		wxStaticText* name = new wxStaticText(playersPage, wxID_ANY, wxLine);
 		name->SetFont(font);
 		PlayerListSizer->Add(name, 0, wxALIGN_CENTER_VERTICAL);
 		sizer->Add(PlayerListSizer, 0, wxBOTTOM, 3);
@@ -279,7 +282,7 @@ void mainframe::showPlayers()
 
 	// button to add a new player
 	if (!tourneyStarted) {
-		wxButton* addButton = new wxButton(panel, wxID_ANY, "+", wxDefaultPosition, wxSize(30, 30));
+		wxButton* addButton = new wxButton(playersPage, wxID_ANY, "+", wxDefaultPosition, wxSize(30, 30));
 		sizer->Add(addButton, 0, wxALL);
 		addButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
 			CallAfter([this]() {
@@ -294,15 +297,15 @@ void mainframe::showPlayers()
 	if (game.getPlayersSize() > 1 && !tourneyStarted) {
 		wxBoxSizer* Fsizer = new wxBoxSizer(wxHORIZONTAL);
 
-		wxButton* remButton = new wxButton(panel, wxID_ANY, "-", wxDefaultPosition, wxSize(30, 30));
+		wxButton* remButton = new wxButton(playersPage, wxID_ANY, "-", wxDefaultPosition, wxSize(30, 30));
 		sizer->Add(remButton, 0, wxALL);
 		remButton->Bind(wxEVT_BUTTON, &mainframe::removePlayer, this);
 
 
 		// text box to set the number of rounds in the tournament
-		sizer->Add(new wxStaticText(panel, wxID_ANY, "Round Num"), 0, wxALL, 3);
+		sizer->Add(new wxStaticText(playersPage, wxID_ANY, "Round Num"), 0, wxALL, 3);
 
-		wxTextCtrl* rnum = new wxTextCtrl(panel, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(150, 30));
+		wxTextCtrl* rnum = new wxTextCtrl(playersPage, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(150, 30));
 		rnum->SetFont(font);
 		sizer->Add(rnum, 0, wxALL, 5);
 
@@ -311,13 +314,13 @@ void mainframe::showPlayers()
 
 		sizer->AddSpacer(20);
 		// sets button to start the tournament
-		wxButton* addTButton = new wxButton(panel, wxID_ANY, "Start Tourney");
+		wxButton* addTButton = new wxButton(playersPage, wxID_ANY, "Start Tourney");
 		Fsizer->Add(addTButton, 1, wxALIGN_CENTER_VERTICAL, 4);
 		addTButton->Bind(wxEVT_BUTTON, &mainframe::startAndNextRound, this);
 		sizer->Add(Fsizer, 1, wxEXPAND, 0);
 	}
+	showPage(playersPage);
 
-	refreshLayout();
 }
 //-------------------------------------------------------------------------------------------------------------
 void mainframe::OnAddClicked(wxCommandEvent& evt) {
@@ -406,8 +409,7 @@ void mainframe::OnRemoveClicked(wxCommandEvent& evt) {
 
 void mainframe::startAndNextRound(wxCommandEvent& evt)
 {
-	// if the round number text box is still alive and the tournament has not
-	// started yet, set the number of rounds from it
+	// if the round number text box is still alive and the tournament has not started yet, set the number of rounds from it
 	if (roundNumber && game.getRoundNumber() == 0) {
 		long roundINT = 0;
 		if (!roundNumber->GetValue().ToLong(&roundINT) || roundINT < 1) {
@@ -444,10 +446,9 @@ void mainframe::startAndNextRound(wxCommandEvent& evt)
 		return;
 	}
 	int scrollX = 0, scrollY = 0;
-	panel->GetViewStart(&scrollX, &scrollY);
-	// clear the panel and create new controls for showing the players in the tournament
-	panel->DestroyChildren();
-	fName = lName = ID = nullptr;
+	roundPage->GetViewStart(&scrollX, &scrollY);
+	// clear the roundPage and create new controls for showing the players in the tournament
+	roundPage->DestroyChildren();
 	roundNumber = nullptr;
 
 	wxBoxSizer* Hsizer = new wxBoxSizer(wxHORIZONTAL);
@@ -455,7 +456,7 @@ void mainframe::startAndNextRound(wxCommandEvent& evt)
 
 	sizer = new wxBoxSizer(wxVERTICAL);
 
-	panel->SetSizer(sizer);
+	roundPage->SetSizer(sizer);
 
 	// to ensure that it is not auto-generated every time past the first 
 	if (game.getRoundNumber() == 0)
@@ -465,25 +466,42 @@ void mainframe::startAndNextRound(wxCommandEvent& evt)
 	// headers for pairings and round number
 	wxString roundText = wxString::Format("Round %d", game.getRoundNumber());
 
-	Hsizer->Add(new wxStaticText(panel, wxID_ANY, roundText), 1, wxALIGN_CENTER | wxALL, 3);
-	Hsizer->Add(new wxStaticText(panel, wxID_ANY, "Player 1, WR VS Player 2, WR"), 1, wxALIGN_CENTER | wxALL, 3);
-	Hsizer->Add(new wxStaticText(panel, wxID_ANY, "Set score:"), 1, wxALIGN_CENTER | wxALL, 3);
+	Hsizer->Add(new wxStaticText(roundPage, wxID_ANY, roundText), 1, wxALIGN_CENTER | wxALL, 3);
+	Hsizer->Add(new wxStaticText(roundPage, wxID_ANY, "Player 1, WR VS Player 2, WR"), 1, wxALIGN_CENTER | wxALL, 3);
+	Hsizer->Add(new wxStaticText(roundPage, wxID_ANY, "Set score:"), 1, wxALIGN_CENTER | wxALL, 3);
 
 	sizer->Add(Hsizer, 0, wxEXPAND);
 	sizer->AddSpacer(10);
-	// get the pairings from the game and display them in the panel, along with buttons to set the score for each pairing
+	// get the pairings from the game and display them in the roundPage, along with buttons to set the score for each pairing
+	// wip, make it so only the rows get changed
+	if (true) {
+		initRounds();
+;		game.setPaired();
+	}
+	else {
+		showPage(roundPage);
+	}
+	wxButton* addTButton = new wxButton(roundPage, wxID_ANY, "Next round");
+	addTButton->Enable(game.AllPairingsScored());
+	Fsizer->Add(addTButton, 1, wxALIGN_CENTER_VERTICAL, 4);
+	addTButton->Bind(wxEVT_BUTTON, &mainframe::OnNextRound, this);
+	sizer->Add(Fsizer, 1, wxEXPAND, 0);
+	showPage(roundPage);
+	roundPage->Scroll(scrollX, scrollY);
+}
+//-------------------------------------------------------------------------------------------------------------
+void mainframe::initRounds() {
 	std::vector<std::string> pairings = game.GetPairing();
 	const std::vector<std::pair<Player*, Player*>>& paired = game.GetPairings();
-
 	for (std::size_t j = 0; j < paired.size() && j < pairings.size(); ++j) {
 		if (!paired[j].first) {
 			continue;
 		}
 
-		wxBoxSizer* PlayerListSizer = new wxBoxSizer(wxHORIZONTAL);
+		PlayerListSizer = new wxBoxSizer(wxHORIZONTAL);
 
 		wxString wxLine = wxString::FromUTF8(pairings[j].c_str());
-		wxStaticText* name = new wxStaticText(panel, wxID_ANY, wxLine);
+		wxStaticText* name = new wxStaticText(roundPage, wxID_ANY, wxLine);
 
 		name->SetFont(font);
 
@@ -496,25 +514,24 @@ void mainframe::startAndNextRound(wxCommandEvent& evt)
 			k = paired[j].second->GetID();
 
 		if (game.IsPairingScored(j)) {
-			// already decided this round - show the result instead of live
-			// buttons, so the same match cannot be scored twice
-			wxStaticText* recorded = new wxStaticText(panel, wxID_ANY, ResultLabel(game.GetPairingResult(j)));
+			// already decided this round show the result instead of buttons
+			wxStaticText* recorded = new wxStaticText(roundPage, wxID_ANY, ResultLabel(game.GetPairingResult(j)));
 			recorded->SetFont(font);
 			PlayerListSizer->Add(recorded, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 10);
 		}
 		else if (paired[j].second) {
-			wxButton* addButton = new wxButton(panel, ID_P1_WIN, "P1 WIN", wxDefaultPosition, wxSize(100, 30));
+			wxButton* addButton = new wxButton(roundPage, ID_P1_WIN, "P1 WIN", wxDefaultPosition, wxSize(100, 30));
 			PlayerListSizer->Add(addButton, 0, wxALL);
 			addButton->Bind(wxEVT_BUTTON, [this, i, k](wxCommandEvent& event) {
 
 				this->OnAddScore(event, i, k);
 				});
-			wxButton* add1Button = new wxButton(panel, ID_TIE, "TIE", wxDefaultPosition, wxSize(100, 30));
+			wxButton* add1Button = new wxButton(roundPage, ID_TIE, "TIE", wxDefaultPosition, wxSize(100, 30));
 			PlayerListSizer->Add(add1Button, 0, wxALL);
 			add1Button->Bind(wxEVT_BUTTON, [this, i, k](wxCommandEvent& event) {
 				this->OnAddScore(event, i, k);
 				});
-			wxButton* add2Button = new wxButton(panel, ID_P1_LOSS, "P1 LOSS", wxDefaultPosition, wxSize(100, 30));
+			wxButton* add2Button = new wxButton(roundPage, ID_P1_LOSS, "P2 WIN", wxDefaultPosition, wxSize(100, 30));
 			PlayerListSizer->Add(add2Button, 0, wxALL);
 			add2Button->Bind(wxEVT_BUTTON, [this, i, k](wxCommandEvent& event) {
 				this->OnAddScore(event, i, k);
@@ -524,17 +541,10 @@ void mainframe::startAndNextRound(wxCommandEvent& evt)
 		sizer->AddSpacer(20);
 
 		sizer->Add(PlayerListSizer, 0, wxBOTTOM, 3);
-	}
 
-	wxButton* addTButton = new wxButton(panel, wxID_ANY, "Next round");
-	addTButton->Enable(game.AllPairingsScored());
-	Fsizer->Add(addTButton, 1, wxALIGN_CENTER_VERTICAL, 4);
-	addTButton->Bind(wxEVT_BUTTON, &mainframe::OnNextRound, this);
-	sizer->Add(Fsizer, 1, wxEXPAND, 0);
-	refreshLayout();
-	panel->Scroll(scrollX, scrollY);
+	}
 }
-//-------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------
 void mainframe::OnAddScore(wxCommandEvent& evt, int p1, int p2)
 {
 	Player* first = game.GetPlayer(p1);
@@ -567,6 +577,7 @@ void mainframe::OnAddScore(wxCommandEvent& evt, int p1, int p2)
 //-------------------------------------------------------------------------------------------------------------
 void mainframe::OnNextRound(wxCommandEvent& evt) {
 	game.ResolveBeeg();
+	game.setPaired();
 	if (game.getTopCut()) {
 		game.PlayTopCut();
 	}
