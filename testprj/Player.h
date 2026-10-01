@@ -28,7 +28,7 @@ public:
 	int GetTies() const;
 
 	string GetName() const;
-	// Player.h
+
 
 	bool HadBye() const { return hadBye; }
 	void SetHadBye(bool value) { hadBye = value; }

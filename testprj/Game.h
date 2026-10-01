@@ -43,6 +43,9 @@ public:
     void PlayTopCut();
     void PlayRound();
     void AddPlayer(Player* p);
+    void BeegQueue(Player* p, int purpose);
+    bool isBeegPlayer(Player* p);
+    void ResolveBeeg();
     Player* GetPlayer(int id) const;
     void FillListTest();
 
@@ -67,5 +70,6 @@ private:
     std::unordered_map<int, Player*> players;
     std::vector<std::pair<Player*, Player*>> pairings;
     std::vector<char> pairingResults;  // parallel to pairings
-    std::vector<Player*> eliminated;   // cut players, owned but no longer competing
+    std::vector<Player*> eliminated;   
+    std::vector<std::pair<Player*, int>> queue;
 };

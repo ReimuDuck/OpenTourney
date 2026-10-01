@@ -63,15 +63,46 @@ void Game::AddPlayer(Player* p) {
     if (it != players.end()) {
         return; // duplicate ID: reject
     }
-
+    if (roundNumber != 0) {
+        for (int i = 0; i < roundNumber; i++) {
+            p->SetScore('L');
+        }
+    }
     players[p->GetID()] = p;
+
     sortedPlayers.clear(); // force a re-sort before the next use
+}
+//-------------------------------------------------------------------------------------------------------------
+// purpose = 0 add, purpose = 1 remove.
+void Game::BeegQueue(Player* p,int purpose) {
+    queue.emplace_back(p, purpose);
+    return;
+}
+//-------------------------------------------------------------------------------------------------------------
+// get a player object inside the queue
+bool Game::isBeegPlayer(Player *p) {
+    if (queue.empty()) return false;
+    for (auto& pair : queue) {
+        if (pair.first == p) return true;
+    }
+    return false;
+}
+//-------------------------------------------------------------------------------------------------------------
+// resolve all queued instructions
+void Game::ResolveBeeg() {
+    if (queue.empty()) return;
+    for ( auto& pair : queue) {
+        if (pair.second == 0) AddPlayer(pair.first);
+        if (pair.second == 1) RetirePlayer(pair.first);
+    }
+    queue.clear();
+    return;
 }
 //-------------------------------------------------------------------------------------------------------------
 // test
 void Game::FillListTest() {
 
-    for (int i = 1; i <= 10; ++i) {
+    for (int i = 1; i <= 20; ++i) {
         std::string name = "PLAYER" + std::to_string(i);
         Player* p = new Player(name, name, i);
         AddPlayer(p);
@@ -144,7 +175,7 @@ void Game::PlayRound() {
 void Game::PlayTopCut() {
     if (!topCut) {
         topCut = true;
-        roundNumber = 1;   // <-- new
+        roundNumber = 0;  
     }
     roundNumber++;
     setPairingsTopCut();
@@ -220,7 +251,7 @@ void Game::setPairingsTopCut() {
         return;
     }
     if (4 < players.size()) {
-        for (int i = 4; i <= players.size(); i++) {
+        while (players.size() > 4) {
             removeLatestPlayer();
         }
     }
@@ -334,14 +365,16 @@ std::vector<std::string> Game::GetPairing() {
             continue;
         }
 
-        result1 += pair.first->GetName();
+        result1 += pair.first->GetName() + " ";
+        result1 += std::to_string(pair.first->GetID());
         result1 += " ------- " + std::to_string(pair.first->GetWins()) + "W/"
             + std::to_string(pair.first->GetLosses()) + "L/"
             + std::to_string(pair.first->GetTies()) + "T";
         result1 += " - " + std::to_string(pair.first->GetWR()) + "%";
         result1 += " vs ";
         if (pair.second) {
-            result2 += pair.second->GetName();
+            result2 += pair.second->GetName() + " ";
+            result2 += std::to_string(pair.second->GetID());
             result2 += " ------- " + std::to_string(pair.second->GetWins()) + "W/"
                 + std::to_string(pair.second->GetLosses()) + "L/"
                 + std::to_string(pair.second->GetTies()) + "T";
@@ -368,6 +401,13 @@ std::string Game::GetStandings() {
     for (std::size_t i = 0; i < sortedPlayers.size(); i++) {
         result += std::to_string(i + 1) + ". " + sortedPlayers[i]->GetName() + " - " + std::to_string(sortedPlayers[i]->GetID()) + " - " + std::to_string(sortedPlayers[i]->GetWR()) + "% " + std::to_string(sortedPlayers[i]->GetOWR()) + "% " + std::to_string(sortedPlayers[i]->GetOOWR()) + "%\n";
     }
+    if (!eliminated.empty() && roundNumber > 0) {
+        result += "DROPPED: \n";
+        for (std::size_t i = 0; i < eliminated.size(); i++) {
+            result += eliminated[i]->GetName() + " , " + std::to_string(eliminated[i]->GetID()) + " , " + std::to_string(eliminated[i]->GetWR()) + "% " + std::to_string(eliminated[i]->GetOWR()) + "% " + std::to_string(eliminated[i]->GetOOWR()) + "%\n";
+        }
+    }
+
     return result;
 }
 //-------------------------------------------------------------------------------------------------------------
@@ -380,6 +420,12 @@ std::string Game::CVVStandings() {
     std::string result;
     for (std::size_t i = 0; i < sortedPlayers.size(); i++) {
         result += sortedPlayers[i]->GetName() + " , " + std::to_string(sortedPlayers[i]->GetID()) + " , " + std::to_string(sortedPlayers[i]->GetWR()) + "% " + std::to_string(sortedPlayers[i]->GetOWR()) + "% " + std::to_string(sortedPlayers[i]->GetOOWR()) + "%\n";
+    }
+    if (!eliminated.empty() && roundNumber > 0) {
+        result += "DROPPED: \n";
+        for (std::size_t i = 0; i < eliminated.size(); i++) {
+            result += eliminated[i]->GetName() + " , " + std::to_string(eliminated[i]->GetID()) + " , " + std::to_string(eliminated[i]->GetWR()) + "% " + std::to_string(eliminated[i]->GetOWR()) + "% " + std::to_string(eliminated[i]->GetOOWR()) + "%\n";
+        }
     }
     return result;
 }

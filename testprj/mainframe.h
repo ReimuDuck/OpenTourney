@@ -4,6 +4,8 @@
 #include <wx/overlay.h>
 #include "Player.h"
 #include "Game.h"
+#include <wx/simplebook.h>
+
 
 class mainframe : public wxFrame
 {
@@ -13,13 +15,17 @@ private:
 	Player* player;
 	Game game;
 	
+	wxSimplebook* book;
 	wxStatusBar* statusBar;
-	wxPanel* panel;
+	wxScrolledWindow* panel;
+	wxScrolledWindow* panel1;
+	wxScrolledWindow* panel2;
+	wxScrolledWindow* panel3;
+	wxScrolledWindow* panel4;
 	wxBoxSizer* sizer;
 	wxMenuBar* menuBar;
 	wxMenu* tourneyMenu;
 	wxMenu* fileMenu;
-	wxOverlay* overlay;
 	wxFont font;
 	wxCheckBox* checkScore;
 	void topCut();
@@ -27,10 +33,11 @@ private:
 	std::string checkFileExists();
 	void cvvCreate(wxCommandEvent& evt);
 	void createControls();
+	void refreshLayout();
 	void onAddPlayer(wxCommandEvent& evt);
+	void onRemovePlayer(wxCommandEvent& evt);
 	void OnNextRound(wxCommandEvent& evt);
 	void OnTopCut(wxCommandEvent& evt);
-	void OnTextChanged(wxCommandEvent& evt);
 	void showPlayers();
 	void startAndNextRound(wxCommandEvent& evt);
 	void OnAddScore(wxCommandEvent& evt, int p1, int p2);
@@ -40,6 +47,7 @@ private:
 	wxTextCtrl* lName;
 	wxTextCtrl* ID;
 
+	void OnRemoveClicked(wxCommandEvent& evt);
 	void OnAddClicked(wxCommandEvent& evt);
 };
 
